@@ -1,23 +1,23 @@
-const API_KEY = import.meta.env.VITE_HF_API_KEY;
-const TRANSLATE_URL = "https://api-inference.huggingface.co/models/ai4bharat/indictrans2";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const TRANSLATE_URL = `${API_BASE_URL}/translate`;
 const BLOCKED_TAGS = new Set(["SCRIPT", "STYLE", "TEXTAREA", "CODE", "PRE", "IFRAME", "INPUT", "OPTION", "SELECT", "NOSCRIPT"]);
 
 const LANGUAGE_CODE_MAP = {
-  en: "eng",
-  hi: "hin",
-  bn: "ben",
-  gu: "guj",
-  kn: "kan",
-  ml: "mal",
-  mr: "mar",
-  pa: "pan",
-  ta: "tam",
-  te: "tel",
-  ur: "urd",
-  or: "ori",
-  as: "asm",
-  sd: "snd",
-  ne: "nep",
+  en: "en",
+  hi: "hi",
+  bn: "bn",
+  gu: "gu",
+  kn: "kn",
+  ml: "ml",
+  mr: "mr",
+  pa: "pa",
+  ta: "ta",
+  te: "te",
+  ur: "ur",
+  or: "or",
+  as: "as",
+  sd: "sd",
+  ne: "ne",
 };
 
 const originals = new WeakMap();
@@ -60,56 +60,45 @@ function restoreOriginalText(node) {
   }
 }
 
-function normalizeHfResponse(responseJson) {
-  if (Array.isArray(responseJson)) {
-    return responseJson.map((item) => {
-      if (typeof item === "string") return item;
-      if (item?.generated_text) return item.generated_text;
-      if (item?.translation_text) return item.translation_text;
-      return "";
-    });
-  }
-  if (typeof responseJson === "object" && responseJson !== null) {
-    if (responseJson.generated_text) return [responseJson.generated_text];
-    if (responseJson.translation_text) return [responseJson.translation_text];
-  }
-  return [];
-}
-
 async function translateTextBlocks(texts, targetLang) {
-  const hfTarget = LANGUAGE_CODE_MAP[targetLang];
-  const hfSource = LANGUAGE_CODE_MAP.en;
+  const targetCode = LANGUAGE_CODE_MAP[targetLang];
 
-  if (!hfTarget) {
+  if (!targetCode) {
     throw new Error(`Unsupported target language: ${targetLang}`);
   }
 
   const payload = {
-    inputs: texts,
-    parameters: {
-      task: "translation",
-      source_language: hfSource,
-      target_language: hfTarget,
-    },
+    texts,
+    targetLang,
   };
 
-  const response = await fetch(TRANSLATE_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const response = await fetch(TRANSLATE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-  const json = await response.json();
+    const json = await response.json().catch((error) => {
+      throw new Error(`Translation API response parsing failed: ${error.message}`);
+    });
 
-  if (!response.ok) {
-    const errorText = typeof json === "string" ? json : JSON.stringify(json);
-    throw new Error(`IndicTrans2 API error: ${response.status} ${errorText}`);
+    if (!response.ok) {
+      const errorText = typeof json === "string" ? json : json?.error || JSON.stringify(json);
+      throw new Error(`Translation API error: ${response.status} ${errorText}`);
+    }
+
+    if (!Array.isArray(json.translations) || json.translations.length === 0) {
+      throw new Error(`Translation API returned invalid response: ${JSON.stringify(json)}`);
+    }
+
+    return json.translations;
+  } catch (error) {
+    console.warn('Translation API failed, keeping original text:', error.message);
+    return texts;
   }
-
-  return normalizeHfResponse(json);
 }
 
 const CHUNK_SIZE = 25;
@@ -120,11 +109,6 @@ export async function translatePage(targetLang = "hi") {
   if (targetLang === "en") {
     const nodes = collectTextNodes();
     nodes.forEach(restoreOriginalText);
-    return;
-  }
-
-  if (!API_KEY) {
-    console.warn("Missing VITE_HF_API_KEY environment variable.");
     return;
   }
 
@@ -144,13 +128,18 @@ export async function translatePage(targetLang = "hi") {
   });
   if (currentGroup.length) nodeGroups.push(currentGroup);
 
-  for (const group of nodeGroups) {
-    const texts = group.map((node) => node.nodeValue.trim());
-    const translated = await translateTextBlocks(texts, targetLang);
-    translated.forEach((value, index) => {
-      if (typeof value === "string") {
-        group[index].nodeValue = value;
-      }
-    });
+  try {
+    for (const group of nodeGroups) {
+      const texts = group.map((node) => node.nodeValue.trim());
+      const translated = await translateTextBlocks(texts, targetLang);
+      translated.forEach((value, index) => {
+        if (typeof value === "string") {
+          group[index].nodeValue = value;
+        }
+      });
+    }
+  } catch (error) {
+    nodes.forEach(restoreOriginalText);
+    throw error;
   }
 }

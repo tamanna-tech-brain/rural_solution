@@ -7,6 +7,13 @@ let devTransporter;
 
 const createTransporter = async () => {
   if (process.env.MAIL_HOST && process.env.MAIL_USER && process.env.MAIL_PASS) {
+    console.log("Email transport configured:", {
+      host: process.env.MAIL_HOST,
+      port: process.env.MAIL_PORT || 587,
+      secure: process.env.MAIL_SECURE === "true",
+      user: process.env.MAIL_USER,
+    });
+
     return nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       port: process.env.MAIL_PORT ? Number(process.env.MAIL_PORT) : 587,
@@ -52,6 +59,14 @@ const sendVerificationEmail = async (user) => {
     subject: "Verify your email",
     text: `Your verification code is ${otp}. It expires in 10 minutes.`,
     html: `<p>Your verification code is <strong>${otp}</strong>. It expires in 10 minutes.</p>`,
+  });
+
+  console.log("Verification email send result:", {
+    messageId: info.messageId,
+    accepted: info.accepted,
+    rejected: info.rejected,
+    response: info.response,
+    previewUrl: nodemailer.getTestMessageUrl(info),
   });
 
   return nodemailer.getTestMessageUrl(info);

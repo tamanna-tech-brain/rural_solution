@@ -12,6 +12,7 @@ import mandiRoutes from './routes/mandiRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import disputeRoutes from './routes/disputeRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import translationRoutes from './routes/translationRoutes.js';
 
 dotenv.config();
 
@@ -35,5 +36,6 @@ app.use('/api/mandi', mandiRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/disputes', disputeRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/translate', translationRoutes);
 
 export default app;  
