@@ -1,9 +1,7 @@
 const Card = ({ children, className = "" }) => {
   return (
     <div
-      className={`bg-white/80 backdrop-blur border border-gray-100 
-      rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300
-      hover:-translate-y-1 ${className}`}
+      className={`overflow-hidden rounded-3xl border border-slate-200/70 bg-white/90 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.65)] backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_70px_-35px_rgba(16,185,129,0.55)] ${className}`}
     >
       {children}
     </div>

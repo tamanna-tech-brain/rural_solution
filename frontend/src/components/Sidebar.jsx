@@ -1,27 +1,69 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import {
+  Bell,
+  BadgeDollarSign,
+  CalendarRange,
+  LayoutDashboard,
+  MapPinned,
+  ShieldAlert,
+  Tractor,
+  Store,
+  Users,
+} from "lucide-react";
+
+const menuItems = [
+  { label: "Dashboard", to: "/", icon: LayoutDashboard },
+  { label: "Users", to: "/user", icon: Users },
+  { label: "Equipment", to: "/equipment", icon: Tractor },
+  { label: "Bookings", to: "/booking", icon: CalendarRange },
+  { label: "Mandi", to: "/mandi", icon: Store },
+  { label: "Payments", to: "/payment", icon: BadgeDollarSign },
+  { label: "Disputes", to: "/dispute", icon: ShieldAlert },
+  { label: "Map", to: "/map", icon: MapPinned },
+  { label: "Notifications", to: "/notifications", icon: Bell },
+];
 
 const Sidebar = () => {
   return (
-    <div className="w-64 bg-white border-r min-h-screen p-5">
+    <aside className="hidden w-72 shrink-0 border-r border-slate-200/70 bg-white/90 px-5 py-6 backdrop-blur lg:flex lg:flex-col">
+      <div className="rounded-3xl bg-gradient-to-br from-emerald-600 to-green-700 px-4 py-5 text-white shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 text-lg">
+            🌾
+          </div>
+          <div>
+            <p className="text-sm font-semibold">KrishiPool</p>
+            <p className="text-xs text-emerald-50/85">Agriculture coordination</p>
+          </div>
+        </div>
+      </div>
 
-      <h1 className="text-xl font-bold text-green-600 mb-8">
-        KrishiPool
-      </h1>
-
-      <nav className="flex flex-col gap-3 text-gray-700">
-
-        <Link className="hover:text-green-600" to="/">Dashboard</Link>
-        <Link className="hover:text-green-600" to="/equipment">Equipment</Link>
-        <Link className="hover:text-green-600" to="/booking">Bookings</Link>
-        <Link className="hover:text-green-600" to="/mandi">Mandi</Link>
-        <Link className="hover:text-green-600" to="/payment">Payments</Link>
-        <Link className="hover:text-green-600" to="/dispute">Disputes</Link>
-<Link className="hover:text-green-600" to="/notifications">
-  Notifications
-</Link>
+      <nav className="mt-6 flex flex-1 flex-col gap-2">
+        {menuItems.map(({ label, to, icon: Icon }) => (
+          <NavLink
+            key={label}
+            to={to}
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all ${
+                isActive
+                  ? "bg-emerald-600 text-white shadow-md"
+                  : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
+              }`
+            }
+          >
+            <Icon size={18} />
+            <span>{label}</span>
+          </NavLink>
+        ))}
       </nav>
 
-    </div>
+      <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-3 text-xs text-emerald-800">
+        <p className="font-semibold">Tip</p>
+        <p className="mt-1 text-emerald-700/90">
+          Keep bookings, payments, and disputes organized in one place.
+        </p>
+      </div>
+    </aside>
   );
 };
 

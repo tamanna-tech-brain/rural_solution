@@ -100,24 +100,11 @@ export const register = async (req, res) => {
       verified: false,
     });
 
-    let previewUrl;
-    try {
-      previewUrl = await sendVerificationEmail(user);
-    } catch (emailError) {
-      await User.findByIdAndDelete(user._id);
-      return res.status(500).json({
-        success: false,
-        message: `Registration failed: ${emailError.message}`,
-      });
-    }
-
     const response = {
       success: true,
       user,
-      message: "Registration successful. Verification OTP sent to email.",
+      message: "Registration successful. Please verify your email from the page.",
     };
-
-    if (previewUrl) response.previewUrl = previewUrl;
 
     res.status(201).json(response);
   } catch (error) {

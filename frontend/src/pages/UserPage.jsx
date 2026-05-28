@@ -28,33 +28,47 @@ const UserPage = () => {
 
   const [editData, setEditData] = useState({});
 
+  const [verificationData, setVerificationData] = useState({
+    email: "",
+    otp: "",
+  });
+
+  const [verificationMessage, setVerificationMessage] = useState("");
+
   useEffect(() => {
     if (user) setEditData(user);
   }, [user]);
 
-  const handleVerifyEmail = async () => {
+  const handleSendVerificationOtp = async () => {
     try {
-      const email = prompt("Enter your email for verification:");
-      if (!email) return;
-      const otp = prompt("Enter the OTP sent to your email:");
-      if (!otp) return;
-      const res = await verifyEmail({ email, otp });
-      alert(res.data.message || "Email verified successfully");
+      const email = verificationData.email.trim();
+
+      if (!email) {
+        setVerificationMessage("Enter your email to send OTP.");
+        return;
+      }
+
+      const res = await resendVerificationOtp({ email });
+      setVerificationMessage(res.data.message || "OTP sent to your email.");
     } catch (err) {
-      alert(err?.response?.data?.message || "Verification failed");
+      setVerificationMessage(err?.response?.data?.message || "Failed to send OTP.");
     }
   };
 
-  const handleResendOtp = async () => {
+  const handleVerifyEmail = async () => {
     try {
-      const email = prompt("Enter your email to resend OTP:");
-      if (!email) return;
-      const res = await resendVerificationOtp({ email });
-      const message = res.data.message || "OTP resent to your email";
-      const previewUrl = res.data.previewUrl;
-      alert(previewUrl ? `${message}\nPreview: ${previewUrl}` : message);
+      const email = verificationData.email.trim();
+      const otp = verificationData.otp.trim();
+
+      if (!email || !otp) {
+        setVerificationMessage("Enter both email and OTP to verify.");
+        return;
+      }
+
+      const res = await verifyEmail({ email, otp });
+      setVerificationMessage(res.data.message || "Email verified successfully.");
     } catch (err) {
-      alert(err?.response?.data?.message || "Resend OTP failed");
+      setVerificationMessage(err?.response?.data?.message || "Verification failed.");
     }
   };
 
@@ -62,6 +76,11 @@ const UserPage = () => {
   const handleRegister = async () => {
     try {
       await registerUser(registerData);
+      setVerificationData((prev) => ({
+        ...prev,
+        email: registerData.email,
+      }));
+      setVerificationMessage("Registration successful. Send OTP below to verify your email.");
       alert("Registration Successful 🚜");
       setIsLogin(true);
     } catch (err) {
@@ -165,28 +184,61 @@ const UserPage = () => {
           </h1>
 
           {!user && (
-            <div className="flex flex-col items-center gap-3 mt-6">
-              <div className="flex justify-center gap-3">
-                <button onClick={() => setIsLogin(false)}
-                  className={`px-4 py-2 rounded-xl ${!isLogin ? "bg-green-600 text-white" : "bg-gray-200"}`}>
-                  Register
-                </button>
+            <div className="flex justify-center gap-3 mt-6">
+              <button onClick={() => setIsLogin(false)}
+                className={`px-4 py-2 rounded-xl ${!isLogin ? "bg-green-600 text-white" : "bg-gray-200"}`}>
+                Register
+              </button>
 
-                <button onClick={() => setIsLogin(true)}
-                  className={`px-4 py-2 rounded-xl ${isLogin ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
-                  Login
-                </button>
+              <button onClick={() => setIsLogin(true)}
+                className={`px-4 py-2 rounded-xl ${isLogin ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
+                Login
+              </button>
+            </div>
+          )}
+
+          {!user && (
+            <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-left">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-green-800">Email verification</h2>
+                  <p className="text-sm text-green-700">Send OTP and verify your email from this page.</p>
+                </div>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3">
-                <button onClick={handleVerifyEmail}
-                  className="px-4 py-2 rounded-xl bg-yellow-500 text-black">
-                  Verify Email
-                </button>
-                <button onClick={handleResendOtp}
-                  className="px-4 py-2 rounded-xl bg-orange-500 text-white">
-                  Resend OTP
-                </button>
+              <div className="mt-4 space-y-3">
+                <input
+                  type="email"
+                  className={input}
+                  placeholder="Email"
+                  value={verificationData.email}
+                  onChange={(e) => setVerificationData({ ...verificationData, email: e.target.value })}
+                />
+
+                <input
+                  className={input}
+                  placeholder="OTP"
+                  value={verificationData.otp}
+                  onChange={(e) => setVerificationData({ ...verificationData, otp: e.target.value })}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button onClick={handleSendVerificationOtp}
+                    className="w-full bg-orange-500 text-white p-3 rounded-xl">
+                    Send OTP
+                  </button>
+
+                  <button onClick={handleVerifyEmail}
+                    className="w-full bg-yellow-500 text-black p-3 rounded-xl">
+                    Verify Email
+                  </button>
+                </div>
+
+                {verificationMessage && (
+                  <p className="rounded-xl bg-white px-3 py-2 text-sm text-gray-700 border border-green-200">
+                    {verificationMessage}
+                  </p>
+                )}
               </div>
             </div>
           )}

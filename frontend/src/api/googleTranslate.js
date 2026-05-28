@@ -21,6 +21,8 @@ const LANGUAGE_CODE_MAP = {
 };
 
 const originals = new WeakMap();
+const NON_LATIN_SCRIPT = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F\u0D80-\u0DFF\u0E00-\u0E7F\u0F00-\u0FFF\u1000-\u109F\u1100-\u11FF\u1E00-\u1EFF]/;
+const RTL_LANGUAGES = new Set(["ur", "sd", "ar", "fa", "he", "iw"]);
 
 function isTranslatableTextNode(node) {
   if (!node || node.nodeType !== Node.TEXT_NODE) return false;
@@ -30,6 +32,19 @@ function isTranslatableTextNode(node) {
   const parent = node.parentElement;
   if (!parent || BLOCKED_TAGS.has(parent.tagName)) return false;
   if (parent.closest(".notranslate")) return false;
+
+  // Preserve translated nodes so a user can switch languages again
+  // and restore back to English.
+  if (originals.has(node)) {
+    return true;
+  }
+
+  // Skip nodes that already contain non-English scripts until they have
+  // been saved as originals. This avoids mangling names and mixed-language content.
+  const englishLike = /^[\x00-\x7F\s.,!?\-–—'"()0-9]+$/;
+  if (!englishLike.test(text) && NON_LATIN_SCRIPT.test(text)) {
+    return false;
+  }
 
   return true;
 }
@@ -60,7 +75,7 @@ function restoreOriginalText(node) {
   }
 }
 
-async function translateTextBlocks(texts, targetLang) {
+async function translateTextBlocks(texts, sourceLang, targetLang) {
   const targetCode = LANGUAGE_CODE_MAP[targetLang];
 
   if (!targetCode) {
@@ -69,6 +84,7 @@ async function translateTextBlocks(texts, targetLang) {
 
   const payload = {
     texts,
+    sourceLang,
     targetLang,
   };
 
@@ -106,7 +122,12 @@ const CHUNK_SIZE = 25;
 export async function translatePage(targetLang = "hi") {
   if (typeof window === "undefined") return;
 
+  const previousLang = document.documentElement.lang || localStorage.getItem("lang") || "en";
+  const direction = RTL_LANGUAGES.has(targetLang) ? "rtl" : "ltr";
+
   if (targetLang === "en") {
+    document.documentElement.lang = "en";
+    document.documentElement.dir = direction;
     const nodes = collectTextNodes();
     nodes.forEach(restoreOriginalText);
     return;
@@ -131,13 +152,16 @@ export async function translatePage(targetLang = "hi") {
   try {
     for (const group of nodeGroups) {
       const texts = group.map((node) => node.nodeValue.trim());
-      const translated = await translateTextBlocks(texts, targetLang);
+      const translated = await translateTextBlocks(texts, previousLang, targetLang);
       translated.forEach((value, index) => {
         if (typeof value === "string") {
           group[index].nodeValue = value;
         }
       });
     }
+
+    document.documentElement.lang = targetLang;
+    document.documentElement.dir = direction;
   } catch (error) {
     nodes.forEach(restoreOriginalText);
     throw error;
