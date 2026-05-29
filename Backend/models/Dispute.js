@@ -1,12 +1,90 @@
-import mongoose from 'mongoose';
-const disputeSchema = new mongoose.Schema({
-  raisedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  against: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  bookingId: { type: mongoose.Schema.Types.ObjectId },
-  reason: String,
-  status: { type: String, default: 'open' } // open, resolved
-});
+import mongoose from "mongoose";
 
-const Dispute = mongoose.model('Dispute', disputeSchema);
+const disputeSchema =
+  new mongoose.Schema(
+    {
+      raisedBy: {
+        type:
+          mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
 
-export default Dispute;
+      against: {
+        type:
+          mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+
+      bookingType: {
+        type: String,
+        enum: [
+          "Equipment",
+          "Mandi",
+        ],
+        required: true,
+      },
+
+      bookingId: {
+        type:
+          mongoose.Schema.Types.ObjectId,
+        refPath: "bookingModel",
+        default: null,
+      },
+
+      bookingModel: {
+        type: String,
+        enum: [
+          "Booking",
+          "MandiPool",
+        ],
+      },
+
+      reason: {
+        type: String,
+        required: true,
+      },
+
+      status: {
+        type: String,
+        enum: [
+          "open",
+          "resolved",
+        ],
+        default: "open",
+      },
+    },
+    {
+      timestamps: true,
+    }
+  );
+
+// AUTO MODEL SET
+disputeSchema.pre(
+  "save",
+  function (next) {
+    if (
+      this.bookingType ===
+      "Equipment"
+    ) {
+      this.bookingModel =
+        "Booking";
+    }
+
+    if (
+      this.bookingType ===
+      "Mandi"
+    ) {
+      this.bookingModel =
+        "MandiPool";
+    }
+
+    next();
+  }
+);
+
+export default mongoose.model(
+  "Dispute",
+  disputeSchema
+);

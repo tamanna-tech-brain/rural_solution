@@ -34,13 +34,33 @@ export const getSingleUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    ).select("-password");
+
+    if (req.user.id !== req.params.id) {
+      return res.status(403).json({
+        message: "Unauthorized",
+      });
+    }
+
+    const updateData = {
+      name: req.body.name,
+      email: req.body.email,
+      village: req.body.village,
+      region: req.body.region,
+    };
+
+    if (req.file) {
+      updateData.profileImage = req.file.path;
+    }
+
+    const updatedUser =
+      await User.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      ).select("-password");
 
     res.json(updatedUser);
+
   } catch (error) {
     res.status(500).json({
       message: "Failed To Update User",
@@ -50,6 +70,11 @@ export const updateUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
+    if (req.user.id !== req.params.id) {
+      return res.status(403).json({
+        message: "Unauthorized",
+      });
+    }
     await User.findByIdAndDelete(req.params.id);
 
     res.json({

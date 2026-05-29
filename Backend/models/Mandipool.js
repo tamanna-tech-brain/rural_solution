@@ -1,20 +1,91 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+
 const mandiPoolSchema = new mongoose.Schema({
-  mandiDate: { type: Date, required: true },
-  mandiLocation: { type: String, required: true },
-  driverName: { type: String },
-  truckCapacity: { type: Number, required: true }, // in kg or volume
+  ownerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+
+  mandiDate: {
+    type: Date,
+    required: true,
+  },
+
+  mandiLocation: {
+    type: String,
+    required: true,
+  },
+
+  driverName: String,
+
+  driverPhone: String,
+
+  truckCapacity: {
+    type: Number,
+    required: true,
+  },
+
   farmersJoined: [
     {
-      farmerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      farmerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+
       cropType: String,
+
       cropWeight: Number,
-      shareCost: Number
-    }
+
+      shareCost: Number,
+    },
   ],
-  totalWeight: { type: Number, default: 0 },
-  status: { type: String, default: 'scheduled' } // scheduled, completed
+
+  totalWeight: {
+    type: Number,
+    default: 0,
+  },
+
+  // FIXED STATUS
+  status: {
+    type: String,
+
+    enum: [
+      "Pending",
+      "Confirmed",
+      "Cancelled",
+      "onTrip",
+      "completed",
+    ],
+
+    default: "Pending",
+  },
+
+  isBooked: {
+    type: Boolean,
+    default: false,
+  },
+
+  // DRIVER GPS
+  driverLocation: {
+    lat: Number,
+
+    lng: Number,
+
+    startedAt: String,
+
+    endedAt: String,
+
+    updatedAt: Date,
+  },
+
+  tripStarted: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const MandiPool = mongoose.model('MandiPool', mandiPoolSchema);
-export default MandiPool;
+export default mongoose.model(
+  "MandiPool",
+  mandiPoolSchema
+);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   createMandi,
   getMandi,
@@ -6,8 +7,8 @@ import {
   deleteMandi,
   getMandiById,
   getUsers,
+  updateMandiLocation,
 } from "../api/api";
-
 
 const images = [
   "https://images.unsplash.com/photo-1500937386664-56d1dfef3854",
@@ -17,36 +18,42 @@ const images = [
 ];
 
 const MandiPage = () => {
+  const navigate = useNavigate();
   const [mandiList, setMandiList] = useState([]);
   const [users, setUsers] = useState([]);
   const [editingId, setEditingId] = useState(null);
+
+  const user = JSON.parse(localStorage.getItem("user"));
 
   const [formData, setFormData] = useState({
     mandiDate: "",
     mandiLocation: "",
     driverName: "",
+    driverPhone: "",
     truckCapacity: "",
     totalWeight: "",
-    status: "scheduled",
-    farmersJoined: [
-      {
-        farmerId: "",
-        cropType: "",
-        cropWeight: "",
-        shareCost: "",
-      },
-    ],
+    status: "Pending",
+    farmersJoined: [{ farmerId: "", cropType: "", cropWeight: "", shareCost: "" }],
   });
 
-  // FETCH
   const fetchMandi = async () => {
-    const res = await getMandi();
-    setMandiList(res.data || []);
+    try {
+      const res = await getMandi();
+      setMandiList(res.data || []);
+    } catch (err) {
+      console.log("FETCH MANDI ERROR:", err);
+      alert(err.response?.data?.message || "Error fetching mandi");
+    }
   };
 
   const fetchUsers = async () => {
-    const res = await getUsers();
-    setUsers(res.data || []);
+    try {
+      const res = await getUsers();
+      setUsers(res.data || []);
+    } catch (err) {
+      console.log("FETCH USERS ERROR:", err);
+      setUsers([]);
+    }
   };
 
   useEffect(() => {
@@ -54,7 +61,25 @@ const MandiPage = () => {
     fetchUsers();
   }, []);
 
-  // FARMER CHANGE
+  useEffect(() => {
+    if (!editingId) return;
+
+    const interval = setInterval(() => {
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+          await updateMandiLocation(editingId, {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          });
+        } catch (err) {
+          console.log("LOCATION UPDATE ERROR:", err);
+        }
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [editingId]);
+
   const handleChangeFarmer = (index, field, value) => {
     const updated = [...formData.farmersJoined];
     updated[index][field] = value;
@@ -62,6 +87,7 @@ const MandiPage = () => {
   };
 
   const addFarmer = () => {
+    if (formData.farmersJoined.length >= 2) return;
     setFormData({
       ...formData,
       farmersJoined: [
@@ -71,250 +97,295 @@ const MandiPage = () => {
     });
   };
 
-  // CREATE / UPDATE
-  const handleSubmit = async () => {
-    if (!formData.mandiDate || !formData.mandiLocation) {
-      return alert("Fill required fields");
-    }
-
-    if (editingId) {
-      await updateMandi(editingId, formData);
-      alert("Updated Successfully");
-    } else {
-      await createMandi(formData);
-      alert("Created Successfully");
-    }
-
-    resetForm();
-    fetchMandi();
+  const hasDuplicateFarmers = () => {
+    const ids = formData.farmersJoined.map((f) => f.farmerId).filter(Boolean);
+    return new Set(ids).size !== ids.length;
   };
 
-  // RESET
+  const canAddFarmer = formData.farmersJoined.length < 2;
+
+  const buildPayload = () => ({
+    ...formData,
+    truckCapacity: Number(formData.truckCapacity) || 0,
+    totalWeight: Number(formData.totalWeight) || 0,
+    farmersJoined: formData.farmersJoined
+      .filter((f) => f.farmerId)
+      .map((f) => ({
+        farmerId: f.farmerId,
+        cropType: f.cropType || "",
+        cropWeight: Number(f.cropWeight) || 0,
+        shareCost: Number(f.shareCost) || 0,
+      })),
+  });
+
+  const handleSubmit = async () => {
+    try {
+      if (!formData.mandiDate || !formData.mandiLocation) {
+        return alert("Fill required fields");
+      }
+
+      if (hasDuplicateFarmers()) {
+        return alert("Duplicate farmers not allowed");
+      }
+
+      const payload = buildPayload();
+
+      if (editingId) {
+        await updateMandi(editingId, payload);
+        alert("Updated Successfully");
+      } else {
+        await createMandi(payload);
+        alert("Created Successfully");
+      }
+
+      resetForm();
+      fetchMandi();
+    } catch (err) {
+      console.log("MANDI SUBMIT ERROR:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Failed to save mandi");
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       mandiDate: "",
       mandiLocation: "",
       driverName: "",
+      driverPhone: "",
       truckCapacity: "",
       totalWeight: "",
       status: "scheduled",
-      farmersJoined: [
-        {
-          farmerId: "",
-          cropType: "",
-          cropWeight: "",
-          shareCost: "",
-        },
-      ],
+      farmersJoined: [{ farmerId: "", cropType: "", cropWeight: "", shareCost: "" }],
     });
     setEditingId(null);
   };
 
-  // EDIT (FIXED)
   const handleEdit = async (id) => {
-    const res = await getMandiById(id);
+    try {
+      const res = await getMandiById(id);
 
-    setFormData({
-      ...res.data,
-      mandiDate: res.data.mandiDate?.split("T")[0],
-    });
+      setFormData({
+        mandiDate: res.data?.mandiDate?.split("T")[0] ?? "",
+        mandiLocation: res.data?.mandiLocation ?? "",
+        driverName: res.data?.driverName ?? "",
+        driverPhone: res.data?.driverPhone ?? "",
+        truckCapacity: res.data?.truckCapacity ?? "",
+        totalWeight: res.data?.totalWeight ?? "",
+        status: res.data?.status ?? "scheduled",
+        farmersJoined:
+          res.data?.farmersJoined?.length > 0
+            ? res.data.farmersJoined.map((f) => ({
+                farmerId: f?.farmerId?._id ?? f?.farmerId ?? "",
+                cropType: f?.cropType ?? "",
+                cropWeight: f?.cropWeight ?? "",
+                shareCost: f?.shareCost ?? "",
+              }))
+            : [{ farmerId: "", cropType: "", cropWeight: "", shareCost: "" }],
+      });
 
-    setEditingId(id);
+      setEditingId(id);
+    } catch (err) {
+      console.log("EDIT MANDI ERROR:", err);
+    }
   };
 
-  // DELETE (FIXED)
   const handleDelete = async (id) => {
-    await deleteMandi(id);
-    alert("Deleted Successfully");
-    fetchMandi();
+    try {
+      await deleteMandi(id);
+      fetchMandi();
+    } catch (err) {
+      console.log("DELETE MANDI ERROR:", err);
+    }
   };
 
-  const inputStyle =
-    "w-full p-3 mb-3 rounded-xl border border-gray-200 bg-white text-black focus:ring-2 focus:ring-green-500 outline-none";
+  const inputStyle = "w-full p-3 mb-3 rounded-xl border bg-white text-black";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 p-4">
-
-      {/* HEADER */}
-      <div className="bg-gradient-to-r from-green-700 to-emerald-600 text-white p-6 rounded-2xl shadow-lg mb-6">
-        <h1 className="text-3xl font-bold">🚛 Mandi Pool Dashboard</h1>
-        <p className="text-sm opacity-90 mt-1">
-          Smart farming logistics system
-        </p>
+    <div className="min-h-screen bg-green-50 p-4">
+      <div className="bg-green-700 text-white p-5 rounded-2xl mb-5">
+        <h1 className="text-2xl font-bold">🚛 Mandi Pool Dashboard</h1>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
-
-        {/* FORM */}
-        <div className="bg-white p-5 rounded-2xl shadow-xl">
-
-          <h2 className="text-xl font-bold text-green-700 mb-4">
-            {editingId ? "✏️ Update Pool" : "➕ Create Pool"}
-          </h2>
-
+        <div className="bg-white p-5 rounded-xl">
           <input
             type="date"
             className={inputStyle}
             value={formData.mandiDate}
-            onChange={(e) =>
-              setFormData({ ...formData, mandiDate: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, mandiDate: e.target.value })}
           />
 
           <input
             className={inputStyle}
-            placeholder="📍 Mandi Location"
+            placeholder="Mandi Location"
             value={formData.mandiLocation}
-            onChange={(e) =>
-              setFormData({ ...formData, mandiLocation: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, mandiLocation: e.target.value })}
           />
 
           <input
             className={inputStyle}
-            placeholder="🚛 Driver Name"
+            placeholder="Driver Name"
             value={formData.driverName}
-            onChange={(e) =>
-              setFormData({ ...formData, driverName: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, driverName: e.target.value })}
           />
 
           <input
             className={inputStyle}
-            placeholder="📦 Truck Capacity"
+            placeholder="Driver Phone"
+            value={formData.driverPhone}
+            onChange={(e) => setFormData({ ...formData, driverPhone: e.target.value })}
+          />
+
+          <input
+            className={inputStyle}
+            placeholder="Truck Capacity"
             value={formData.truckCapacity}
-            onChange={(e) =>
-              setFormData({ ...formData, truckCapacity: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, truckCapacity: e.target.value })}
           />
 
           <input
             className={inputStyle}
-            placeholder="⚖️ Total Weight"
+            placeholder="Total Weight"
             value={formData.totalWeight}
-            onChange={(e) =>
-              setFormData({ ...formData, totalWeight: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, totalWeight: e.target.value })}
           />
 
-          {/* FARMERS */}
-          <div className="border rounded-xl p-3 mb-3 bg-gray-50">
-            <h3 className="font-bold mb-2">👨‍🌾 Farmers Joined</h3>
+          <div className="mb-3">
+            <button
+              type="button"
+              disabled={!canAddFarmer}
+              onClick={addFarmer}
+              className={`w-full p-2 rounded-xl text-white ${
+                canAddFarmer ? "bg-green-600" : "bg-gray-400 cursor-not-allowed"
+              }`}
+            >
+              Add Farmer (Max 2)
+            </button>
 
-            {formData.farmersJoined.map((f, i) => (
-              <div key={i}>
-
+            {formData.farmersJoined.map((f, index) => (
+              <div key={index} className="mt-2 border p-2 rounded">
                 <select
                   className={inputStyle}
-                  value={f.farmerId}
-                  onChange={(e) =>
-                    handleChangeFarmer(i, "farmerId", e.target.value)
-                  }
+                  value={f.farmerId || ""}
+                  onChange={(e) => handleChangeFarmer(index, "farmerId", e.target.value)}
                 >
                   <option value="">Select Farmer</option>
-                  {users.map((u) => (
-                    <option key={u._id} value={u._id}>
-                      {u.name}
-                    </option>
-                  ))}
+                  {users.map((u) => {
+                    const disabled = formData.farmersJoined.some(
+                      (farmer, i) => farmer.farmerId === u._id && i !== index
+                    );
+
+                    return (
+                      <option key={u._id} value={u._id} disabled={disabled}>
+                        {u.name}
+                      </option>
+                    );
+                  })}
                 </select>
 
                 <input
                   className={inputStyle}
                   placeholder="Crop Type"
                   value={f.cropType}
-                  onChange={(e) =>
-                    handleChangeFarmer(i, "cropType", e.target.value)
-                  }
+                  onChange={(e) => handleChangeFarmer(index, "cropType", e.target.value)}
                 />
 
                 <input
                   className={inputStyle}
                   placeholder="Crop Weight"
                   value={f.cropWeight}
-                  onChange={(e) =>
-                    handleChangeFarmer(i, "cropWeight", e.target.value)
-                  }
+                  onChange={(e) => handleChangeFarmer(index, "cropWeight", e.target.value)}
                 />
 
                 <input
                   className={inputStyle}
                   placeholder="Share Cost"
                   value={f.shareCost}
-                  onChange={(e) =>
-                    handleChangeFarmer(i, "shareCost", e.target.value)
-                  }
+                  onChange={(e) => handleChangeFarmer(index, "shareCost", e.target.value)}
                 />
               </div>
             ))}
-
-            <button
-              onClick={addFarmer}
-              className="w-full bg-blue-600 text-white py-2 rounded-xl"
-            >
-              + Add Farmer
-            </button>
           </div>
 
           <button
             onClick={handleSubmit}
-            className="w-full bg-green-600 text-white p-3 rounded-xl font-bold"
+            className="w-full bg-green-600 text-white p-3 rounded-xl"
           >
-            {editingId ? "Update Pool" : "Create Pool"}
+            {editingId ? "Update" : "Create"}
           </button>
         </div>
 
-        {/* LIST */}
-        <div className="lg:col-span-2 grid md:grid-cols-2 gap-5">
-
+        <div className="lg:col-span-2 grid md:grid-cols-2 gap-4">
           {mandiList.map((m, i) => (
-            <div
-              key={m._id}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden"
-            >
-
+            <div key={m._id} className="bg-white rounded-xl shadow">
               <img
                 src={images[i % images.length]}
-                className="h-44 w-full object-cover"
+                alt={m.mandiLocation}
+                className="h-40 w-full object-cover"
               />
 
               <div className="p-4">
-
-                <h2 className="font-bold text-green-700">
-                  📍 {m.mandiLocation}
-                </h2>
-
+                <h2 className="font-bold text-green-700">📍 {m.mandiLocation}</h2>
                 <p>🚛 {m.driverName}</p>
-                <p>📦 {m.truckCapacity} kg</p>
-                <p>⚖️ {m.totalWeight} kg</p>
-                <p>📅 {m.mandiDate?.split("T")[0]}</p>
+                <p>📞 {m.driverPhone}</p>
 
-                <span className="inline-block mt-2 px-3 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700">
+                {m.driverLocation?.lat && (
+                  <p className="text-blue-600 text-sm">
+                    📍 Live: {m.driverLocation.lat.toFixed(4)}, {m.driverLocation.lng.toFixed(4)}
+                  </p>
+                )}
+
+                <span className="text-xs bg-yellow-100 px-2 py-1 rounded">
                   {m.status}
                 </span>
 
-                <div className="flex gap-2 mt-3">
+                {user?._id === m.ownerId?._id && (
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => handleEdit(m._id)}
+                      className="bg-yellow-500 flex-1 text-white p-2 rounded"
+                    >
+                      Edit
+                    </button>
 
-                  <button
-                    onClick={() => handleEdit(m._id)}
-                    className="flex-1 bg-yellow-500 text-white py-2 rounded-xl"
-                  >
-                    Edit
-                  </button>
+                    <button
+                      onClick={() => handleDelete(m._id)}
+                      className="bg-red-500 flex-1 text-white p-2 rounded"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
 
-                  <button
-                    onClick={() => handleDelete(m._id)}
-                    className="flex-1 bg-red-500 text-white py-2 rounded-xl"
-                  >
-                    Delete
-                  </button>
+                <button
+                  disabled={m.isBooked}
+                  onClick={() => navigate(`/booking/mandi/${m._id}`)}
+                  className={`px-3 py-1 rounded text-white mt-2 mr-2 ${
+                    m.isBooked ? "bg-gray-400 cursor-not-allowed" : "bg-purple-600"
+                  }`}
+                >
+                  {m.isBooked ? "BOOKED" : "BOOK"}
+                </button>
 
-                </div>
+                <button
+                  disabled={!m.isBooked}
+                  onClick={() => navigate(`/trip/${m._id}`)}
+                  className={`px-3 py-1 rounded text-white mt-2 mr-2 ${
+                    !m.isBooked ? "bg-gray-400" : "bg-blue-600"
+                  }`}
+                >
+                  Start Trip
+                </button>
 
+                <button
+                  onClick={() => updateMandiLocation(m._id, { endTrip: true })}
+                  className="bg-red-600 text-white px-3 py-1 rounded mt-2"
+                >
+                  End Trip
+                </button>
               </div>
             </div>
           ))}
-
         </div>
       </div>
     </div>

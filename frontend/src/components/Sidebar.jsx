@@ -9,18 +9,19 @@ import {
   Tractor,
   Store,
   Users,
+  HelpCircle
 } from "lucide-react";
 
 const menuItems = [
   { label: "Dashboard", to: "/", icon: LayoutDashboard },
   { label: "Users", to: "/user", icon: Users },
   { label: "Equipment", to: "/equipment", icon: Tractor },
-  { label: "Bookings", to: "/booking", icon: CalendarRange },
   { label: "Mandi", to: "/mandi", icon: Store },
   { label: "Payments", to: "/payment", icon: BadgeDollarSign },
   { label: "Disputes", to: "/dispute", icon: ShieldAlert },
   { label: "Map", to: "/map", icon: MapPinned },
   { label: "Notifications", to: "/notifications", icon: Bell },
+   { label: "Help Desk", to: "/help", icon: HelpCircle },
 ];
 
 const Sidebar = () => {

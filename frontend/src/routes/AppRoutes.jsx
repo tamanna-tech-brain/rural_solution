@@ -11,6 +11,8 @@ import DisputePage from "../pages/DisputePage";
 import MapPage from "../pages/MapPage";
 import UserPage from "../pages/UserPage";
 import NotificationPage from "../pages/NotificationPage";
+import TripPage from "../pages/TripPage";
+import HelpDeskPage from "../pages/HelpDeskPage";
 
 const AppRoutes = () => {
   return (
@@ -66,6 +68,10 @@ const AppRoutes = () => {
         }
       />
 
+       <Route path="/booking/:type/:id" element={<BookingPage />} />
+
+      <Route path="/trip/:id" element={<AppLayout><TripPage /></AppLayout>} />    
+
       {/* ================= PAYMENT ================= */}
       <Route
         path="/payment"
@@ -105,6 +111,14 @@ const AppRoutes = () => {
           </AppLayout>
         }
       />
+      <Route
+  path="/help"
+  element={
+    <AppLayout>
+      <HelpDeskPage />
+    </AppLayout>
+  }
+/>
 
       
 

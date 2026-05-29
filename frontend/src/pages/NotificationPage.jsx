@@ -3,13 +3,15 @@ import {
   createNotification,
   getNotifications,
   markNotificationRead,
+  updateNotification,
+  deleteNotification,
   getUsers,
 } from "../api/api";
-
 
 const NotificationPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [users, setUsers] = useState([]);
+  const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
     userId: "",
@@ -32,35 +34,68 @@ const NotificationPage = () => {
     fetchNotifications();
   }, []);
 
-  const submitHandler = async () => {
-    if (!formData.userId || !formData.message) {
-      return alert("Fill all fields");
-    }
-
-    await createNotification(formData);
-
+  // RESET FORM
+  const resetForm = () => {
     setFormData({
       userId: "",
       message: "",
       type: "booking",
     });
+    setEditingId(null);
+  };
 
+  // CREATE / UPDATE
+  const submitHandler = async () => {
+    if (!formData.userId || !formData.message) {
+      return alert("Fill all fields");
+    }
+
+    try {
+      if (editingId) {
+        await updateNotification(editingId, formData);
+        alert("Notification Updated");
+      } else {
+        await createNotification(formData);
+        alert("Notification Created");
+      }
+
+      resetForm();
+      fetchNotifications();
+    } catch (err) {
+      alert(err?.response?.data?.message || "Error");
+    }
+  };
+
+  // MARK READ
+  const markRead = async (id) => {
+    await markNotificationRead(id);
     fetchNotifications();
   };
 
-  const markRead = async (id) => {
-    await markNotificationRead(id);
+  // EDIT (OWNER ONLY CHECK IS BACKEND)
+  const handleEdit = (n) => {
+    setFormData({
+      userId: n.userId?._id,
+      message: n.message,
+      type: n.type,
+    });
+    setEditingId(n._id);
+  };
+
+  // DELETE (OWNER ONLY CHECK IS BACKEND)
+  const handleDelete = async (id) => {
+    await deleteNotification(id);
     fetchNotifications();
   };
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 grid lg:grid-cols-2 gap-6">
 
-      {/* FORM */}
+      {/* ================= FORM ================= */}
       <div className="bg-white p-6 rounded-2xl shadow border">
 
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
-          Create Notification
+          {editingId ? "Update Notification" : "Create Notification"}
         </h2>
 
         {/* USER */}
@@ -106,11 +141,11 @@ const NotificationPage = () => {
           onClick={submitHandler}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold p-3 rounded-xl"
         >
-          Send Notification
+          {editingId ? "Update Notification" : "Send Notification"}
         </button>
       </div>
 
-      {/* LIST */}
+      {/* ================= LIST ================= */}
       <div className="space-y-4">
 
         <h2 className="text-xl font-bold text-gray-900">
@@ -152,15 +187,33 @@ const NotificationPage = () => {
                 {n.read ? "Read" : "Unread"}
               </span>
 
-              {/* BUTTON */}
-              {!n.read && (
+              {/* ACTIONS */}
+              <div className="flex gap-2 mt-3">
+
+                {!n.read && (
+                  <button
+                    onClick={() => markRead(n._id)}
+                    className="flex-1 bg-green-600 text-white p-2 rounded-xl"
+                  >
+                    Mark Read
+                  </button>
+                )}
+
                 <button
-                  onClick={() => markRead(n._id)}
-                  className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-semibold p-2 rounded-xl"
+                  onClick={() => handleEdit(n)}
+                  className="flex-1 bg-yellow-500 text-white p-2 rounded-xl"
                 >
-                  Mark as Read
+                  Edit
                 </button>
-              )}
+
+                <button
+                  onClick={() => handleDelete(n._id)}
+                  className="flex-1 bg-red-600 text-white p-2 rounded-xl"
+                >
+                  Delete
+                </button>
+
+              </div>
 
             </div>
           ))

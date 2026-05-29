@@ -1,8 +1,10 @@
+import dotenv from "dotenv";
+dotenv.config({ path: "./.env" });
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import mongoose from "mongoose"
-import dotenv from "dotenv";
+import path from "path";
 
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -13,8 +15,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import disputeRoutes from './routes/disputeRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import translationRoutes from './routes/translationRoutes.js';
-
-dotenv.config();
+import helpRoutes from "./routes/helpRoutes.js";
 
 const app = express();
 
@@ -37,5 +38,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/disputes', disputeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/translate', translationRoutes);
+app.use("/uploads", express.static("uploads"));
+app.use("/api/help", helpRoutes);
 
 export default app;  

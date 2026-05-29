@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema(
 
     region: { type: String, required: true },
 
+    profileImage: {
+      type: String,
+      default: "",
+    },
+
     trustScore: { type: Number, default: 5 },
 
     verified: { type: Boolean, default: false },

@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { registerUser, loginUser, verifyEmail, resendVerificationOtp } from "../api/api";
+import {
+  registerUser,
+  loginUser,
+  verifyEmail,
+  resendVerificationOtp,
+} from "../api/api";
+
 import API from "../api/api";
 import { useNavigate } from "react-router-dom";
 
@@ -36,122 +42,218 @@ const UserPage = () => {
   const [verificationMessage, setVerificationMessage] = useState("");
 
   useEffect(() => {
-    if (user) setEditData(user);
+    if (user) {
+      setEditData(user);
+    }
   }, [user]);
 
+  //
+  // SEND OTP
+  //
   const handleSendVerificationOtp = async () => {
     try {
       const email = verificationData.email.trim();
 
       if (!email) {
-        setVerificationMessage("Enter your email to send OTP.");
+        setVerificationMessage("Enter email first");
         return;
       }
 
-      const res = await resendVerificationOtp({ email });
-      setVerificationMessage(res.data.message || "OTP sent to your email.");
+      const res = await resendVerificationOtp({
+        email,
+      });
+
+      setVerificationMessage(
+        res.data.message || "OTP sent successfully"
+      );
     } catch (err) {
-      setVerificationMessage(err?.response?.data?.message || "Failed to send OTP.");
+      setVerificationMessage(
+        err?.response?.data?.message ||
+          "Failed to send OTP"
+      );
     }
   };
 
+  //
+  // VERIFY OTP
+  //
   const handleVerifyEmail = async () => {
     try {
       const email = verificationData.email.trim();
+
       const otp = verificationData.otp.trim();
 
       if (!email || !otp) {
-        setVerificationMessage("Enter both email and OTP to verify.");
+        setVerificationMessage(
+          "Enter email and OTP"
+        );
         return;
       }
 
-      const res = await verifyEmail({ email, otp });
-      setVerificationMessage(res.data.message || "Email verified successfully.");
+      const res = await verifyEmail({
+        email,
+        otp,
+      });
+
+      // SAVE TOKEN AFTER VERIFY
+      localStorage.setItem(
+        "token",
+        res.data.token
+      );
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(res.data.user)
+      );
+
+      setUser(res.data.user);
+
+      setVerificationMessage(
+        "Verification successful"
+      );
+
+      alert("Login Successful 🚀");
+
+      navigate("/");
     } catch (err) {
-      setVerificationMessage(err?.response?.data?.message || "Verification failed.");
+      setVerificationMessage(
+        err?.response?.data?.message ||
+          "Verification failed"
+      );
     }
   };
 
+  //
   // REGISTER
+  //
   const handleRegister = async () => {
     try {
-      await registerUser(registerData);
-      setVerificationData((prev) => ({
-        ...prev,
+      const res = await registerUser(
+        registerData
+      );
+
+      setVerificationData({
         email: registerData.email,
-      }));
-      setVerificationMessage("Registration successful. Send OTP below to verify your email.");
-      alert("Registration Successful 🚜");
+        otp: "",
+      });
+
+      setVerificationMessage(
+        res.data.message ||
+          "Registration successful. OTP sent."
+      );
+
+      alert("OTP Sent 📩");
+
       setIsLogin(true);
     } catch (err) {
-      alert(err?.response?.data?.message || "Register Failed");
+      alert(
+        err?.response?.data?.message ||
+          "Register Failed"
+      );
     }
   };
 
+  //
   // LOGIN
+  //
   const handleLogin = async () => {
     try {
       const res = await loginUser(loginData);
 
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      setVerificationData({
+        email: loginData.email,
+        otp: "",
+      });
 
-      setUser(res.data.user);
+      setVerificationMessage(
+        res.data.message || "OTP sent to email"
+      );
 
-      alert("Login Successful 🚀");
-      navigate("/");
+      alert("OTP Sent 📩");
     } catch (err) {
-      alert(err?.response?.data?.message || "Login Failed");
+      alert(
+        err?.response?.data?.message ||
+          "Login Failed"
+      );
     }
   };
 
+  //
   // GET USER
+  //
   const getUser = async () => {
     try {
-      if (!user?._id) return alert("User ID missing");
+      if (!user?._id) {
+        alert("User ID missing");
+        return;
+      }
 
-      const res = await API.get(`/users/${user._id}`);
+      const res = await API.get(
+        `/users/${user._id}`
+      );
 
       setUser(res.data);
+
       setEditData(res.data);
 
       alert("Profile Loaded ✅");
     } catch (err) {
       console.log(err);
+
       alert("Get Failed");
     }
   };
 
+  //
   // UPDATE USER
+  //
   const updateUserHandler = async () => {
     try {
-      if (!user?._id) return alert("User ID missing");
+      if (!user?._id) {
+        alert("User ID missing");
+        return;
+      }
 
-      const res = await API.put(`/users/${user._id}`, editData);
+      const res = await API.put(
+        `/users/${user._id}`,
+        editData
+      );
 
-      localStorage.setItem("user", JSON.stringify(res.data));
+      localStorage.setItem(
+        "user",
+        JSON.stringify(res.data)
+      );
+
       setUser(res.data);
 
       alert("Updated Successfully ✨");
     } catch (err) {
       console.log(err);
+
       alert("Update Failed");
     }
   };
 
+  //
   // DELETE USER
+  //
   const deleteUserHandler = async () => {
     try {
-      if (!user?._id) return alert("User ID missing");
+      if (!user?._id) {
+        alert("User ID missing");
+        return;
+      }
 
       await API.delete(`/users/${user._id}`);
 
       localStorage.clear();
+
       setUser(null);
 
       alert("Deleted Successfully ❌");
     } catch (err) {
       console.log(err);
+
       alert("Delete Failed");
     }
   };
@@ -171,8 +273,11 @@ const UserPage = () => {
             className="h-full w-full object-cover"
             alt="farm"
           />
+
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <h1 className="text-white text-5xl font-bold">🚜 KrishiPool</h1>
+            <h1 className="text-white text-5xl font-bold">
+              🚜 KrishiPool
+            </h1>
           </div>
         </div>
 
@@ -185,103 +290,227 @@ const UserPage = () => {
 
           {!user && (
             <div className="flex justify-center gap-3 mt-6">
-              <button onClick={() => setIsLogin(false)}
-                className={`px-4 py-2 rounded-xl ${!isLogin ? "bg-green-600 text-white" : "bg-gray-200"}`}>
+
+              <button
+                onClick={() => setIsLogin(false)}
+                className={`px-4 py-2 rounded-xl ${
+                  !isLogin
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-200"
+                }`}
+              >
                 Register
               </button>
 
-              <button onClick={() => setIsLogin(true)}
-                className={`px-4 py-2 rounded-xl ${isLogin ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
+              <button
+                onClick={() => setIsLogin(true)}
+                className={`px-4 py-2 rounded-xl ${
+                  isLogin
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200"
+                }`}
+              >
                 Login
               </button>
+
             </div>
           )}
 
+          {/* OTP SECTION */}
           {!user && (
-            <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-left">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-green-800">Email verification</h2>
-                  <p className="text-sm text-green-700">Send OTP and verify your email from this page.</p>
-                </div>
-              </div>
+            <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-4">
 
-              <div className="mt-4 space-y-3">
+              <h2 className="text-lg font-semibold text-green-800">
+                Email Verification
+              </h2>
+
+              <p className="text-sm text-green-700 mb-4">
+                Verify your OTP here
+              </p>
+
+              <div className="space-y-3">
+
                 <input
                   type="email"
                   className={input}
                   placeholder="Email"
                   value={verificationData.email}
-                  onChange={(e) => setVerificationData({ ...verificationData, email: e.target.value })}
+                  onChange={(e) =>
+                    setVerificationData({
+                      ...verificationData,
+                      email: e.target.value,
+                    })
+                  }
                 />
 
                 <input
                   className={input}
                   placeholder="OTP"
                   value={verificationData.otp}
-                  onChange={(e) => setVerificationData({ ...verificationData, otp: e.target.value })}
+                  onChange={(e) =>
+                    setVerificationData({
+                      ...verificationData,
+                      otp: e.target.value,
+                    })
+                  }
                 />
 
                 <div className="grid grid-cols-2 gap-3">
-                  <button onClick={handleSendVerificationOtp}
-                    className="w-full bg-orange-500 text-white p-3 rounded-xl">
+
+                  <button
+                    onClick={
+                      handleSendVerificationOtp
+                    }
+                    className="w-full bg-orange-500 text-white p-3 rounded-xl"
+                  >
                     Send OTP
                   </button>
 
-                  <button onClick={handleVerifyEmail}
-                    className="w-full bg-yellow-500 text-black p-3 rounded-xl">
-                    Verify Email
+                  <button
+                    onClick={handleVerifyEmail}
+                    className="w-full bg-yellow-500 text-black p-3 rounded-xl"
+                  >
+                    Verify OTP
                   </button>
+
                 </div>
 
                 {verificationMessage && (
-                  <p className="rounded-xl bg-white px-3 py-2 text-sm text-gray-700 border border-green-200">
+                  <div
+                    className={`rounded-xl px-3 py-2 text-sm border ${
+                      verificationMessage
+                        .toLowerCase()
+                        .includes("successful")
+                        ? "bg-green-100 text-green-700 border-green-300"
+                        : verificationMessage
+                            .toLowerCase()
+                            .includes("otp")
+                        ? "bg-blue-100 text-blue-700 border-blue-300"
+                        : "bg-red-100 text-red-700 border-red-300"
+                    }`}
+                  >
                     {verificationMessage}
-                  </p>
+                  </div>
                 )}
+
               </div>
+
             </div>
           )}
 
           {/* REGISTER */}
           {!isLogin && !user ? (
             <div className="mt-6 space-y-3">
-              <input className={input} placeholder="Name"
-                onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })} />
 
-              <input className={input} placeholder="Email"
-                onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })} />
+              <input
+                className={input}
+                placeholder="Name"
+                onChange={(e) =>
+                  setRegisterData({
+                    ...registerData,
+                    name: e.target.value,
+                  })
+                }
+              />
 
-              <input className={input} placeholder="Phone"
-                onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })} />
+              <input
+                className={input}
+                placeholder="Email"
+                onChange={(e) =>
+                  setRegisterData({
+                    ...registerData,
+                    email: e.target.value,
+                  })
+                }
+              />
 
-              <input className={input} placeholder="Village"
-                onChange={(e) => setRegisterData({ ...registerData, village: e.target.value })} />
+              <input
+                className={input}
+                placeholder="Phone"
+                onChange={(e) =>
+                  setRegisterData({
+                    ...registerData,
+                    phone: e.target.value,
+                  })
+                }
+              />
 
-              <input className={input} placeholder="Region"
-                onChange={(e) => setRegisterData({ ...registerData, region: e.target.value })} />
+              <input
+                className={input}
+                placeholder="Village"
+                onChange={(e) =>
+                  setRegisterData({
+                    ...registerData,
+                    village: e.target.value,
+                  })
+                }
+              />
 
-              <input type="password" className={input} placeholder="Password"
-                onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })} />
+              <input
+                className={input}
+                placeholder="Region"
+                onChange={(e) =>
+                  setRegisterData({
+                    ...registerData,
+                    region: e.target.value,
+                  })
+                }
+              />
 
-              <button onClick={handleRegister}
-                className="w-full bg-green-600 text-white p-3 rounded-xl">
+              <input
+                type="password"
+                className={input}
+                placeholder="Password"
+                onChange={(e) =>
+                  setRegisterData({
+                    ...registerData,
+                    password: e.target.value,
+                  })
+                }
+              />
+
+              <button
+                onClick={handleRegister}
+                className="w-full bg-green-600 text-white p-3 rounded-xl"
+              >
                 Register
               </button>
+
             </div>
           ) : !user ? (
             /* LOGIN */
             <div className="mt-6 space-y-3">
-              <input className={input} placeholder="Email"
-                onChange={(e) => setLoginData({ ...loginData, email: e.target.value })} />
 
-              <input type="password" className={input} placeholder="Password"
-                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} />
+              <input
+                className={input}
+                placeholder="Email"
+                onChange={(e) =>
+                  setLoginData({
+                    ...loginData,
+                    email: e.target.value,
+                  })
+                }
+              />
 
-              <button onClick={handleLogin}
-                className="w-full bg-blue-600 text-white p-3 rounded-xl">
+              <input
+                type="password"
+                className={input}
+                placeholder="Password"
+                onChange={(e) =>
+                  setLoginData({
+                    ...loginData,
+                    password: e.target.value,
+                  })
+                }
+              />
+
+              <button
+                onClick={handleLogin}
+                className="w-full bg-blue-600 text-white p-3 rounded-xl"
+              >
                 Login
               </button>
+
             </div>
           ) : (
             /* DASHBOARD */
@@ -291,40 +520,73 @@ const UserPage = () => {
                 Welcome {user.name} 👋
               </h2>
 
-              <button onClick={getUser}
-                className="w-full bg-gray-700 text-white p-2 rounded-xl">
+              <button
+                onClick={getUser}
+                className="w-full bg-gray-700 text-white p-2 rounded-xl"
+              >
                 Refresh Profile
               </button>
 
-              <input className={input} value={editData.name || ""}
-                onChange={(e) => setEditData({ ...editData, name: e.target.value })} />
+              <input
+                className={input}
+                value={editData.name || ""}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    name: e.target.value,
+                  })
+                }
+              />
 
-              <input className={input} value={editData.email || ""}
-                onChange={(e) => setEditData({ ...editData, email: e.target.value })} />
+              <input
+                className={input}
+                value={editData.email || ""}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    email: e.target.value,
+                  })
+                }
+              />
 
-              <input className={input} value={editData.village || ""}
-                onChange={(e) => setEditData({ ...editData, village: e.target.value })} />
+              <input
+                className={input}
+                value={editData.village || ""}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    village: e.target.value,
+                  })
+                }
+              />
 
-              <button onClick={updateUserHandler}
-                className="w-full bg-green-600 text-white p-3 rounded-xl">
+              <button
+                onClick={updateUserHandler}
+                className="w-full bg-green-600 text-white p-3 rounded-xl"
+              >
                 Update
               </button>
 
-              <button onClick={deleteUserHandler}
-                className="w-full bg-red-600 text-white p-3 rounded-xl">
+              <button
+                onClick={deleteUserHandler}
+                className="w-full bg-red-600 text-white p-3 rounded-xl"
+              >
                 Delete Account
               </button>
 
-              <button onClick={() => {
-                localStorage.clear();
-                setUser(null);
-              }}
-                className="w-full bg-black text-white p-3 rounded-xl">
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  setUser(null);
+                }}
+                className="w-full bg-black text-white p-3 rounded-xl"
+              >
                 Logout
               </button>
 
             </div>
           )}
+
         </div>
       </div>
     </div>
