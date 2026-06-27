@@ -1,129 +1,73 @@
-import { Routes, Route } from "react-router-dom";
+import { Suspense, lazy } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import AppLayout from '../layout/AppLayout';
+import { PageSkeleton } from '../components/LoadingSkeleton';
 
-import AppLayout from "../layout/AppLayout";
+// Lazy load pages for code splitting
+const Dashboard      = lazy(() => import('../pages/DashBoard'));
+const EquipmentPage  = lazy(() => import('../pages/EquipmentPage'));
+const BookingPage    = lazy(() => import('../pages/BookingPage'));
+const MandiPage      = lazy(() => import('../pages/MandiPage'));
+const PaymentPage    = lazy(() => import('../pages/PaymentPage'));
+const DisputePage    = lazy(() => import('../pages/DisputePage'));
+const MapPage        = lazy(() => import('../pages/MapPage'));
+const UserPage       = lazy(() => import('../pages/UserPage'));
+const NotificationPage = lazy(() => import('../pages/NotificationPage'));
+const TripPage       = lazy(() => import('../pages/TripPage'));
+const HelpDeskPage   = lazy(() => import('../pages/HelpDeskPage'));
+const AdminPage      = lazy(() => import('../pages/AdminPage'));
+const ProfilePage    = lazy(() => import('../pages/ProfilePage'));
+const NotFound       = lazy(() => import('../pages/NotFound'));
 
-import Dashboard from "../pages/Dashboard";
-import EquipmentPage from "../pages/EquipmentPage";
-import BookingPage from "../pages/BookingPage";
-import MandiPage from "../pages/MandiPage";
-import PaymentPage from "../pages/PaymentPage";
-import DisputePage from "../pages/DisputePage";
-import MapPage from "../pages/MapPage";
-import UserPage from "../pages/UserPage";
-import NotificationPage from "../pages/NotificationPage";
-import TripPage from "../pages/TripPage";
-import HelpDeskPage from "../pages/HelpDeskPage";
+const Loading = () => (
+  <AppLayout>
+    <PageSkeleton />
+  </AppLayout>
+);
 
-const AppRoutes = () => {
-  return (
+const AppRoutes = () => (
+  <Suspense fallback={<Loading />}>
     <Routes>
+      {/* ── Dashboard ── */}
+      <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
 
-      {/* ================= DASHBOARD ================= */}
-      <Route
-        path="/"
-        element={
-          <AppLayout>
-            <Dashboard />
-          </AppLayout>
-        }
-      />
+      {/* ── Auth / Profile ── */}
+      <Route path="/user"    element={<AppLayout><UserPage /></AppLayout>} />
+      <Route path="/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
 
-      {/* ================= USERS ================= */}
-      <Route
-        path="/user"
-        element={
-          <AppLayout>
-            <UserPage />
-          </AppLayout>
-        }
-      />
+      {/* ── Equipment ── */}
+      <Route path="/equipment" element={<AppLayout><EquipmentPage /></AppLayout>} />
 
-      {/* ================= EQUIPMENT ================= */}
-      <Route
-        path="/equipment"
-        element={
-          <AppLayout>
-            <EquipmentPage />
-          </AppLayout>
-        }
-      />
+      {/* ── Bookings ── */}
+      <Route path="/booking"          element={<AppLayout><BookingPage /></AppLayout>} />
+      <Route path="/booking/:type/:id" element={<AppLayout><BookingPage /></AppLayout>} />
 
-      {/* ================= BOOKING ================= */}
-      <Route
-        path="/booking"
-        element={
-          <AppLayout>
-            <BookingPage />
-          </AppLayout>
-        }
-      />
+      {/* ── Mandi Pool ── */}
+      <Route path="/mandi"     element={<AppLayout><MandiPage /></AppLayout>} />
+      <Route path="/trip/:id"  element={<AppLayout><TripPage /></AppLayout>} />
 
-      {/* ================= MANDI ================= */}
-      <Route
-        path="/mandi"
-        element={
-          <AppLayout>
-            <MandiPage />
-          </AppLayout>
-        }
-      />
+      {/* ── Payments ── */}
+      <Route path="/payment" element={<AppLayout><PaymentPage /></AppLayout>} />
 
-       <Route path="/booking/:type/:id" element={<BookingPage />} />
+      {/* ── Disputes ── */}
+      <Route path="/dispute" element={<AppLayout><DisputePage /></AppLayout>} />
 
-      <Route path="/trip/:id" element={<AppLayout><TripPage /></AppLayout>} />    
+      {/* ── Map ── */}
+      <Route path="/map" element={<AppLayout><MapPage /></AppLayout>} />
 
-      {/* ================= PAYMENT ================= */}
-      <Route
-        path="/payment"
-        element={
-          <AppLayout>
-            <PaymentPage />
-          </AppLayout>
-        }
-      />
+      {/* ── Notifications ── */}
+      <Route path="/notifications" element={<AppLayout><NotificationPage /></AppLayout>} />
 
-      {/* ================= DISPUTE ================= */}
-      <Route
-        path="/dispute"
-        element={
-          <AppLayout>
-            <DisputePage />
-          </AppLayout>
-        }
-      />
+      {/* ── Help Desk ── */}
+      <Route path="/help" element={<AppLayout><HelpDeskPage /></AppLayout>} />
 
-      {/* ================= MAP ================= */}
-      <Route
-        path="/map"
-        element={
-          <AppLayout>
-            <MapPage />
-          </AppLayout>
-        }
-      />
+      {/* ── Admin ── */}
+      <Route path="/admin" element={<AppLayout><AdminPage /></AppLayout>} />
 
-      {/* ================= NOTIFICATIONS (NEW FIX) ================= */}
-      <Route
-        path="/notifications"
-        element={
-          <AppLayout>
-            <NotificationPage />
-          </AppLayout>
-        }
-      />
-      <Route
-  path="/help"
-  element={
-    <AppLayout>
-      <HelpDeskPage />
-    </AppLayout>
-  }
-/>
-
-      
-
+      {/* ── 404 ── */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
-  );
-};
+  </Suspense>
+);
 
 export default AppRoutes;

@@ -1,153 +1,189 @@
-# Krisipool
+# 🌾 KrishiPool — Rural Agri-Coordination Platform
 
-> A collaborative mandi/booking platform (Backend: Node/Express, Frontend: React + Vite)
-
----
-
-## Table of Contents
-- [Project Overview](#project-overview)
-- [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Backend Setup](#backend-setup)
-  - [Frontend Setup](#frontend-setup)
-- [Environment Variables](#environment-variables)
-- [Running Locally](#running-locally)
-- [Project Structure](#project-structure)
-- [API Notes](#api-notes)
-- [Contributing](#contributing)
-- [License & Contact](#license--contact)
+> A modern SaaS platform connecting Indian farmers for **equipment rental**, **mandi transport pooling**, **payments**, **dispute resolution**, and **real-time GPS tracking**.
 
 ---
 
-## Project Overview
+## 🚀 Tech Stack
 
-Krisipool is a full-stack application for managing mandi listings, equipment bookings, payments, notifications and user management. The repository contains a Node.js/Express backend and a React (Vite) frontend.
+| Layer     | Technology |
+|-----------|-----------|
+| Frontend  | React 19 + Vite + Tailwind CSS + Framer Motion |
+| State     | Redux Toolkit |
+| Backend   | Node.js + Express 5 + MongoDB + Mongoose |
+| Auth      | JWT + OTP Email Verification |
+| Storage   | Cloudinary (images) |
+| Maps      | React-Leaflet + OpenStreetMap |
+| Charts    | Recharts |
+| Deployment| Docker + Nginx + PM2 |
 
-## Tech Stack
+---
 
-- Backend: Node.js, Express, MongoDB (Mongoose)
-- Frontend: React, Vite, TailwindCSS
-- Auth: JWT
-- Real-time: socket-based modules (sockets/)
-- Payments: Razorpay dependency present (integrations may be in services)
+## 📦 Project Structure
 
-## Features
+```
+rural_solution/
+├── Backend/
+│   ├── config/          # DB, Cloudinary config
+│   ├── controllers/     # Auth, Equipment, Booking, Mandi, Payment, Dispute, Admin
+│   ├── middleware/      # Auth, Admin, Upload, ErrorHandler
+│   ├── models/          # User, Equipment, Booking, MandiPool, Payment, Dispute, Notification, HelpPost
+│   ├── routes/          # All API routes
+│   ├── services/        # Business logic services
+│   ├── app.js           # Express app setup
+│   ├── server.js        # Server entry point
+│   ├── Dockerfile
+│   ├── ecosystem.config.js  # PM2 config
+│   └── .env.example
+│
+├── frontend/
+│   ├── src/
+│   │   ├── api/         # Axios API layer
+│   │   ├── components/  # Sidebar, Navbar, ErrorBoundary, Skeletons, ConfirmDialog
+│   │   ├── context/     # DarkModeContext
+│   │   ├── hooks/       # useAuth, useToast, useDebounce
+│   │   ├── layout/      # AppLayout
+│   │   ├── pages/       # All pages
+│   │   ├── redux/       # Store, Slices
+│   │   └── routes/      # AppRoutes
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   └── .env.example
+│
+└── docker-compose.yml
+```
 
-- User registration, email verification and authentication
-- Equipment listings and booking flows
-- Payments, disputes and notifications
-- Translation utilities and location clustering/helpers
+---
 
-## Getting Started
-
-Follow these quick steps to run the project locally.
+## ⚙️ Local Development Setup
 
 ### Prerequisites
+- Node.js 20+
+- MongoDB (local or Atlas)
+- npm / pnpm
 
-- Node.js 16+ and npm/yarn
-- MongoDB instance (local or hosted)
-
-### Backend Setup
-
-1. Change into the backend folder and install dependencies:
+### 1. Backend
 
 ```bash
 cd Backend
+
+# Copy env file
+cp .env.example .env
+# → Edit .env with your MongoDB URI, JWT secret, Cloudinary keys, SMTP credentials
+
 npm install
-```
-
-2. Create a `.env` file (see `Backend/.env.example`) and set the required variables.
-
-3. Start the dev server:
-
-```bash
 npm run dev
+# Runs on http://localhost:5000
 ```
 
-The backend listens on `process.env.PORT` (defaults to `3000`).
-
-### Frontend Setup
-
-1. Change into the frontend folder and install dependencies:
+### 2. Frontend
 
 ```bash
 cd frontend
+
+# Copy env file
+cp .env.example .env
+# → Set VITE_API_URL=http://localhost:5000/api
+
 npm install
+npm run dev
+# Runs on http://localhost:5173
 ```
 
-2. Start the Vite dev server:
+---
+
+## 🐳 Docker Deployment
 
 ```bash
-npm run dev
+# Build and start all services
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Stop
+docker-compose down
 ```
 
-The frontend dev server default origin is `http://localhost:5173` (CORS is configured in the backend).
+Services:
+- `http://localhost:80` — Frontend
+- `http://localhost:5000` — Backend API
+- `http://localhost:5000/api/health` — Health check
 
-## Environment Variables
+---
 
-Create `Backend/.env` from `Backend/.env.example`. Relevant variables used in the backend include:
-
-- `MONGO_URI` — MongoDB connection string
-- `PORT` — Backend server port
-- `JWT_SECRET` — Secret key for signing JWTs
-- `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASS` — SMTP config (optional; uses nodemailer test account if not provided in development)
-- `MAIL_FROM` — Optional from address for outgoing emails
-- `NODE_ENV` — `development` or `production`
-
-There is also a Cloudinary config file present at `Backend/config/cloudinary.js` (currently empty). Add Cloudinary envs there if you plan to use image uploads.
-
-## Running Locally
-
-Recommended separate terminals:
-
-Backend:
+## 🚀 Production with PM2
 
 ```bash
 cd Backend
-npm run dev
+cp .env.example .env
+# Edit .env for production
+
+npm install --only=production
+npx pm2 start ecosystem.config.js --env production
+npx pm2 save
+npx pm2 startup
 ```
 
-Frontend:
+---
 
-```bash
-cd frontend
-npm run dev
-```
+## 🔑 API Endpoints
 
-Open the app at `http://localhost:5173`.
+| Method | Endpoint                       | Auth | Description |
+|--------|-------------------------------|------|-------------|
+| POST   | /api/auth/register             | —    | Register + send OTP |
+| POST   | /api/auth/login                | —    | Login + send OTP |
+| POST   | /api/auth/verify-email         | —    | Verify OTP → JWT |
+| GET    | /api/equipment                 | —    | List all equipment |
+| POST   | /api/equipment                 | ✅   | Add equipment |
+| GET    | /api/bookings                  | ✅   | List bookings |
+| POST   | /api/bookings                  | ✅   | Create booking |
+| GET    | /api/mandi                     | —    | List mandi pools |
+| POST   | /api/mandi/:id/join            | ✅   | Join a mandi pool |
+| GET    | /api/admin/stats               | 🛡️   | Dashboard stats (admin) |
+| GET    | /api/health                    | —    | Health check |
 
-## Project Structure (high level)
+---
 
-- `Backend/` — Express server, routes, controllers, models, services, sockets
-- `frontend/` — React + Vite app, components, pages, API helpers
+## ✅ Key Improvements Made
 
-See the folders in the repo for more details.
+### Security Fixes
+- ✅ JWT-based ownership checks (not req.body user ID)
+- ✅ Rate limiting (global + auth-specific)
+- ✅ Helmet security headers
+- ✅ Removed API credentials from console logs
+- ✅ Auto-logout on 401 (token expiry)
 
-## API Notes
+### Bug Fixes
+- ✅ Redux Provider missing from main.jsx
+- ✅ Wrong Redux slice filenames
+- ✅ `/booking` route crash without params
+- ✅ `req.user._id` vs `req.user.id` inconsistency
+- ✅ GPS interval memory leak in MandiPage
+- ✅ Duplicate navbar in Dashboard
+- ✅ Express 5 wildcard route syntax
 
-- Backend exposes routes mounted under `/api/*` (see `Backend/app.js`):
-  - `/api/auth` — auth and verification endpoints
-  - `/api/users` — user CRUD and profile
-  - `/api/equipment` — equipment listing endpoints
-  - `/api/bookings` — booking flow
-  - `/api/mandi` — mandi/marketplace endpoints
-  - `/api/payments` — payment endpoints
-  - `/api/disputes` — dispute management
-  - `/api/notifications` — notifications
-  - `/api/translate` — translation helpers
+### New Features
+- ✅ Admin panel with charts and user management
+- ✅ Profile page with trust score
+- ✅ Dark mode with localStorage persistence
+- ✅ Toast notifications (replaced all alert() calls)
+- ✅ Confirm dialogs (replaced all confirm() calls)
+- ✅ Skeleton loading on all pages
+- ✅ Join Mandi Pool API endpoint
+- ✅ 404 Not Found page
+- ✅ Code splitting with React.lazy + Suspense
+- ✅ Docker + Nginx + PM2 deployment configs
 
-Authentication is JWT-based — include `Authorization: Bearer <token>` for protected routes.
+---
 
-## Contributing
+## 🌐 Languages Supported
 
-- Create an issue for the feature or bug you'd like to address.
-- Fork and make a branch: `git checkout -b feat/your-feature`
-- Run linters and tests (if present) before opening a PR.
+Hindi, Bengali, Gujarati, Kannada, Malayalam, Marathi, Punjabi, Tamil, Telugu, Urdu, Odia, Assamese, Nepali, English
 
-## License & Contact
+---
 
-This repo does not include an explicit license file. Add a `LICENSE` if you intend to make the project open-source.
+## 📝 License
 
-If you'd like me to expand this README (add API examples, Postman collection, `.env` generation, or frontend README), tell me which parts to prioritize.
+MIT

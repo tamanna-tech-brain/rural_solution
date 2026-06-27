@@ -9,20 +9,21 @@ import {
   deleteMandi,
   updateMandiStatus,
   updateDriverLocation,
+  joinMandi,
 } from "../controllers/mandiController.js";
 
 const router = express.Router();
 
-router.post("/", authMiddleware, createMandi);
-router.get("/", authMiddleware, getMandi);
-router.get("/:id", authMiddleware, getMandiById);
+// Public
+router.get("/", getMandi);
+router.get("/:id", getMandiById);
 
+// Protected
+router.post("/", authMiddleware, createMandi);
 router.put("/:id", authMiddleware, updateMandi);
 router.delete("/:id", authMiddleware, deleteMandi);
-router.put("/:id", authMiddleware, updateMandi);
 router.put("/:id/status", authMiddleware, updateMandiStatus);
 router.put("/:id/location", authMiddleware, updateDriverLocation);
-
-router.put("/:id/location", authMiddleware, updateDriverLocation);
+router.post("/:id/join", authMiddleware, joinMandi); // NEW: join a mandi pool
 
 export default router;

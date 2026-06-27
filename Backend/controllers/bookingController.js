@@ -1,50 +1,78 @@
 import Booking from "../models/Booking.js";
 import Equipment from "../models/Equipment.js";
+import Notification from "../models/Notification.js";
 
 // CREATE BOOKING
 export const createBooking = async (req, res) => {
   try {
-    const { equipmentId } = req.body;
+    const { equipmentId, startDate, endDate, totalAmount } = req.body;
+
+    if (!equipmentId || !startDate || !endDate || !totalAmount) {
+      return res.status(400).json({ success: false, message: "All fields are required." });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (start >= end) {
+      return res.status(400).json({ success: false, message: "End date must be after start date." });
+    }
 
     const equipment = await Equipment.findById(equipmentId);
-
     if (!equipment) {
-      return res.status(404).json({ message: "Equipment not found" });
+      return res.status(404).json({ success: false, message: "Equipment not found." });
     }
 
-    // 🔴 STRICT LOCK
     if (equipment.isBooked === true) {
-      return res.status(400).json({
-        message: "This equipment is already booked",
-      });
+      return res.status(400).json({ success: false, message: "This equipment is already booked." });
     }
 
-    const booking = await Booking.create(req.body);
+    const booking = await Booking.create({
+      equipmentId,
+      renterId: req.user.id,
+      startDate,
+      endDate,
+      totalAmount: Number(totalAmount),
+      status: "pending",
+    });
 
     equipment.isBooked = true;
     await equipment.save();
 
-    const populated = await booking.populate([
-      "equipmentId",
-      "renterId",
-    ]);
+    const populated = await Booking.findById(booking._id)
+      .populate("equipmentId")
+      .populate("renterId", "name email phone");
 
-    res.status(201).json(populated);
+    // Notify equipment owner
+    try {
+      await Notification.create({
+        userId: equipment.ownerId,
+        message: `Your equipment "${equipment.name}" has been booked by ${req.user.id}.`,
+        type: "booking",
+        relatedId: booking._id,
+        relatedModel: "Booking",
+      });
+    } catch (notifErr) {
+      console.error("Notification creation failed:", notifErr.message);
+    }
+
+    res.status(201).json({ success: true, data: populated });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("CREATE BOOKING ERROR:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// GET ALL
+// GET ALL BOOKINGS
 export const getBookings = async (req, res) => {
   try {
     const data = await Booking.find()
       .populate("equipmentId")
-      .populate("renterId");
+      .populate("renterId", "name email phone village")
+      .sort({ createdAt: -1 });
 
-    res.json(data);
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -53,66 +81,68 @@ export const getBookingById = async (req, res) => {
   try {
     const data = await Booking.findById(req.params.id)
       .populate("equipmentId")
-      .populate("renterId");
+      .populate("renterId", "name email phone");
 
     if (!data) {
-      return res.status(404).json({ message: "Not found" });
+      return res.status(404).json({ success: false, message: "Booking not found." });
     }
 
-    res.json(data);
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// UPDATE (ONLY OWNER)
+// UPDATE BOOKING — only by the renter (verified via JWT)
 export const updateBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-
     if (!booking) {
-      return res.status(404).json({ message: "Booking not found" });
+      return res.status(404).json({ success: false, message: "Booking not found." });
     }
 
-    if (booking.renterId.toString() !== req.body.renterId) {
-      return res.status(403).json({ message: "Not allowed" });
+    // ✅ Use JWT-authenticated user ID
+    if (booking.renterId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: "Access denied. You are not the renter." });
     }
 
-    const updated = await Booking.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    ).populate(["equipmentId", "renterId"]);
+    const allowedUpdates = ["startDate", "endDate", "totalAmount", "status"];
+    allowedUpdates.forEach((field) => {
+      if (req.body[field] !== undefined) booking[field] = req.body[field];
+    });
 
-    res.json(updated);
+    await booking.save();
+
+    const updated = await Booking.findById(booking._id)
+      .populate("equipmentId")
+      .populate("renterId", "name email phone");
+
+    res.json({ success: true, data: updated });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// DELETE (ONLY OWNER + UNLOCK EQUIPMENT)
+// DELETE BOOKING — only by the renter (verified via JWT), unlocks equipment
 export const deleteBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
-
     if (!booking) {
-      return res.status(404).json({ message: "Not found" });
+      return res.status(404).json({ success: false, message: "Booking not found." });
     }
 
-    const renterId = req.body?.renterId;
-
-    if (!renterId || booking.renterId.toString() !== renterId) {
-      return res.status(403).json({ message: "Not allowed" });
+    // ✅ Use JWT-authenticated user ID
+    if (booking.renterId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: "Access denied. You are not the renter." });
     }
 
-    await Equipment.findByIdAndUpdate(booking.equipmentId, {
-      isBooked: false,
-    });
+    // Unlock equipment
+    await Equipment.findByIdAndUpdate(booking.equipmentId, { isBooked: false });
 
     await Booking.findByIdAndDelete(req.params.id);
 
-    res.json({ message: "Deleted successfully" });
+    res.json({ success: true, message: "Booking deleted and equipment unlocked." });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 };

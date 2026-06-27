@@ -1,312 +1,246 @@
-
-
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
-  Tractor,
-  Truck,
-  Users,
-  MapPin,
-  Wallet,
-  Globe,
-  LogOut,
-  UserPlus,
-} from "lucide-react";
+  Tractor, Store, Users, MapPin, BadgeDollarSign, ShieldAlert,
+  CalendarRange, TrendingUp, Globe, ArrowRight, Wheat,
+} from 'lucide-react';
+import useAuth from '../hooks/useAuth';
+import API from '../api/api';
 
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+const LANGUAGES = [
+  { code: 'en', label: 'English' }, { code: 'hi', label: 'हिंदी' },
+  { code: 'bn', label: 'বাংলা' },   { code: 'gu', label: 'ગુજરાતી' },
+  { code: 'kn', label: 'ಕನ್ನಡ' },   { code: 'ml', label: 'മലയാളം' },
+  { code: 'mr', label: 'मराठी' },   { code: 'pa', label: 'ਪੰਜਾਬੀ' },
+  { code: 'ta', label: 'தமிழ்' },   { code: 'te', label: 'తెలుగు' },
+  { code: 'ur', label: 'اردو' },    { code: 'or', label: 'ଓଡ଼ିଆ' },
+  { code: 'as', label: 'অসমীয়া' },  { code: 'ne', label: 'नेपाली' },
+];
+
+const StatCard = ({ icon: Icon, label, value, color, bg, to, delay = 0 }) => {
+  const navigate = useNavigate();
+  return (
+    <motion.div
+      className="card p-5 cursor-pointer group"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.4, ease: 'easeOut' }}
+      whileHover={{ y: -4, boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}
+      onClick={() => to && navigate(to)}
+    >
+      <div className={`mb-3 flex h-11 w-11 items-center justify-center rounded-xl ${bg}`}>
+        <Icon size={22} className={color} />
+      </div>
+      <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+        {value ?? <span className="skeleton inline-block h-7 w-16 rounded" />}
+      </p>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{label}</p>
+      {to && (
+        <span className="mt-2 flex items-center gap-1 text-xs font-medium text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity">
+          View all <ArrowRight size={12} />
+        </span>
+      )}
+    </motion.div>
+  );
+};
+
+const QuickAction = ({ icon: Icon, label, desc, color, onClick, delay = 0 }) => (
+  <motion.button
+    className="card p-5 text-left w-full group hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
+    onClick={onClick}
+    initial={{ opacity: 0, x: -20 }}
+    animate={{ opacity: 1, x: 0 }}
+    transition={{ delay, duration: 0.4 }}
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+  >
+    <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${color}`}>
+      <Icon size={20} className="text-white" />
+    </div>
+    <p className="font-semibold text-slate-800 dark:text-slate-100">{label}</p>
+    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{desc}</p>
+  </motion.button>
+);
 
 const Dashboard = () => {
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  const [language, setLanguage] = useState(
-    localStorage.getItem("lang") || "en"
-  );
+  const [language, setLanguage] = useState(localStorage.getItem('lang') || 'en');
+  const [stats, setStats] = useState(null);
 
   const changeLanguage = (lang) => {
     setLanguage(lang);
-    localStorage.setItem("lang", lang);
-    window.dispatchEvent(new CustomEvent("krishiLangChanged", { detail: { lang } }));
+    localStorage.setItem('lang', lang);
+    window.dispatchEvent(new CustomEvent('krishiLangChanged', { detail: { lang } }));
   };
 
-  const logoutHandler = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    navigate("/user");
-  };
+  useEffect(() => {
+    // Try to fetch admin stats if user is admin
+    if (user?.role === 'admin') {
+      API.get('/admin/stats')
+        .then((res) => setStats(res.data?.data?.stats))
+        .catch(() => setStats(null));
+    }
+  }, [user]);
 
   return (
-    <div className="bg-gradient-to-b from-green-50 to-white min-h-screen">
+    <div className="space-y-8 animate-fade-in">
+      {/* ── Hero Banner ─────────────────────────────────────────────── */}
+      <motion.div
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-green-600 to-teal-700 p-8 text-white shadow-xl"
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        {/* Decorative circles */}
+        <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute -bottom-8 right-24 h-32 w-32 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute left-1/2 top-0 h-20 w-20 rounded-full bg-emerald-400/20" />
 
-      {/* NAVBAR */}
-      <div className="bg-white shadow-lg sticky top-0 z-50 border-b">
-
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
-
-          {/* LEFT */}
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-extrabold text-green-700">
-              KrishiPool
+            <div className="mb-2 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
+                <Wheat size={16} />
+              </div>
+              <span className="text-sm font-medium text-emerald-100">KrishiPool Platform</span>
+            </div>
+            <h1 className="text-3xl font-extrabold sm:text-4xl">
+              Welcome back, {user?.name?.split(' ')[0] || 'Farmer'} 👋
             </h1>
-
-            <p className="text-gray-500 text-sm">
-              Smart Farming Platform
+            <p className="mt-2 max-w-lg text-emerald-100">
+              Smart agri-coordination — rent equipment, pool mandi transport, and manage your farm operations.
             </p>
           </div>
 
-          {/* RIGHT */}
-          <div className="flex items-center gap-3 flex-wrap">
-
-            {/* LANGUAGE */}
-            <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-xl">
-
-              <Globe size={18} className="text-green-700" />
-
-              <select
-                value={language}
-                onChange={(e) => changeLanguage(e.target.value)}
-                className="bg-transparent outline-none text-black"
-              >
-                <option value="en">English</option>
-                <option value="hi">हिंदी</option>
-                <option value="bn">বাংলা</option>
-                <option value="gu">ગુજરાતી</option>
-                <option value="kn">ಕನ್ನಡ</option>
-                <option value="ml">മലയാളം</option>
-                <option value="mr">मराठी</option>
-                <option value="pa">ਪੰਜਾਬੀ</option>
-                <option value="ta">தமிழ்</option>
-                <option value="te">తెలుగు</option>
-                <option value="ur">اردو</option>
-                <option value="or">ଓଡ଼ିଆ</option>
-                <option value="as">অসমীয়া</option>
-                <option value="sd">سنڌي</option>
-                <option value="ne">नेपाली</option>
-              </select>
-            </div>
-
-            {/* LOGIN / LOGOUT */}
-            {!user ? (
-              <button
-                onClick={() => navigate("/user")}
-                className="bg-green-600 hover:bg-green-700 transition text-white px-5 py-2 rounded-xl flex items-center gap-2"
-              >
-                <UserPlus size={18} />
-                Register / Login
-              </button>
-            ) : (
-              <button
-                onClick={logoutHandler}
-                className="bg-red-500 hover:bg-red-600 transition text-white px-5 py-2 rounded-xl flex items-center gap-2"
-              >
-                <LogOut size={18} />
-                Logout
-              </button>
-            )}
+          {/* Language Selector */}
+          <div className="flex shrink-0 items-center gap-2 rounded-xl bg-white/15 px-3 py-2">
+            <Globe size={16} className="text-emerald-100" />
+            <select
+              value={language}
+              onChange={(e) => changeLanguage(e.target.value)}
+              className="bg-transparent text-sm font-medium text-white outline-none cursor-pointer"
+            >
+              {LANGUAGES.map(({ code, label }) => (
+                <option key={code} value={code} className="text-slate-900">{label}</option>
+              ))}
+            </select>
           </div>
         </div>
-      </div>
 
-      {/* HERO */}
-      <div className="relative">
+        <div className="relative mt-6 flex flex-wrap gap-3">
+          <button
+            onClick={() => navigate('/equipment')}
+            className="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-emerald-700 shadow hover:bg-emerald-50 transition-colors"
+          >
+            🚜 Browse Equipment
+          </button>
+          <button
+            onClick={() => navigate('/mandi')}
+            className="rounded-xl bg-white/20 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/30 transition-colors"
+          >
+            🚛 Mandi Pool
+          </button>
+          {!isAuthenticated && (
+            <button
+              onClick={() => navigate('/user')}
+              className="rounded-xl bg-emerald-800/50 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800/70 transition-colors"
+            >
+              Sign In / Register
+            </button>
+          )}
+        </div>
+      </motion.div>
 
-        <img
-          src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=1600&auto=format&fit=crop"
-          alt="farm"
-          className="w-full h-[420px] object-cover"
-        />
-
-        <div className="absolute inset-0 bg-black/60 flex flex-col justify-center px-6 md:px-16">
-
-          <h1 className="text-4xl md:text-6xl font-extrabold text-white max-w-3xl">
-            Welcome {user?.name || "Farmer"} 👋
-          </h1>
-
-          <p className="text-white mt-5 max-w-2xl text-lg">
-            Real-time farming equipment rental platform with mandi transport pooling system.
+      {/* ── Stats Grid ──────────────────────────────────────────────── */}
+      <div>
+        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">Platform Overview</h2>
+        <div className="stats-grid">
+          <StatCard icon={Users}          label="Registered Farmers" value={stats?.totalUsers}      color="text-violet-600"   bg="bg-violet-100 dark:bg-violet-900/30" to="/user"     delay={0.1} />
+          <StatCard icon={Tractor}        label="Equipment Listed"   value={stats?.totalEquipment}  color="text-amber-600"    bg="bg-amber-100 dark:bg-amber-900/30"   to="/equipment" delay={0.15} />
+          <StatCard icon={CalendarRange}  label="Total Bookings"     value={stats?.totalBookings}   color="text-indigo-600"   bg="bg-indigo-100 dark:bg-indigo-900/30" to="/booking"  delay={0.2} />
+          <StatCard icon={Store}          label="Mandi Pools"        value={stats?.totalMandiPools} color="text-sky-600"      bg="bg-sky-100 dark:bg-sky-900/30"       to="/mandi"    delay={0.25} />
+          <StatCard icon={BadgeDollarSign}label="Total Payments"     value={stats?.totalPayments}   color="text-green-600"    bg="bg-green-100 dark:bg-green-900/30"   to="/payment"  delay={0.3} />
+          <StatCard icon={ShieldAlert}    label="Open Disputes"      value={stats?.openDisputes}    color="text-red-600"      bg="bg-red-100 dark:bg-red-900/30"       to="/dispute"  delay={0.35} />
+          <StatCard icon={TrendingUp}     label="Total Revenue (₹)"  value={stats?.totalRevenue ? `₹${stats.totalRevenue.toLocaleString('en-IN')}` : '—'} color="text-emerald-600" bg="bg-emerald-100 dark:bg-emerald-900/30" delay={0.4} />
+          <StatCard icon={MapPin}         label="Live Map"            value="Track" color="text-teal-600" bg="bg-teal-100 dark:bg-teal-900/30" to="/map" delay={0.45} />
+        </div>
+        {!user?.role || user.role !== 'admin' && (
+          <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
+            💡 Login as admin to see live statistics. Stats shown above are placeholders.
           </p>
+        )}
+      </div>
 
-          <div className="flex flex-wrap gap-4 mt-7">
-
-            <button
-              onClick={() => navigate("/equipment")}
-              className="bg-green-600 hover:bg-green-700 transition px-6 py-3 rounded-2xl text-white font-semibold"
-            >
-              Explore Equipment
-            </button>
-
-            <button
-              onClick={() => navigate("/user")}
-              className="bg-white hover:bg-gray-200 transition px-6 py-3 rounded-2xl text-black font-semibold"
-            >
-              Registered Farmer
-            </button>
-          </div>
+      {/* ── Quick Actions ────────────────────────────────────────────── */}
+      <div>
+        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">Quick Actions</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <QuickAction icon={Tractor}       label="Add Equipment"   desc="List your farm equipment for rent"    color="bg-amber-500"   onClick={() => navigate('/equipment')}    delay={0.1} />
+          <QuickAction icon={Store}         label="Create Mandi Pool" desc="Organize shared transport to mandi" color="bg-sky-500"     onClick={() => navigate('/mandi')}        delay={0.15} />
+          <QuickAction icon={BadgeDollarSign} label="Record Payment" desc="Log and track a payment"            color="bg-green-600"   onClick={() => navigate('/payment')}      delay={0.2} />
+          <QuickAction icon={ShieldAlert}   label="Raise Dispute"   desc="Report an issue or conflict"         color="bg-red-500"     onClick={() => navigate('/dispute')}      delay={0.25} />
         </div>
       </div>
 
-      {/* FEATURES */}
-      <div className="max-w-7xl mx-auto px-4 py-10">
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
-          {/* CARD */}
-          <div className="bg-white rounded-3xl shadow-xl p-6 hover:-translate-y-2 transition">
-
-            <div className="bg-green-100 w-fit p-4 rounded-2xl">
-              <Tractor size={40} className="text-green-700" />
-            </div>
-
-            <h2 className="text-2xl font-bold mt-5 text-gray-800">
-              Equipment
-            </h2>
-
-            <p className="text-gray-500 mt-3">
-              Book tractors and farming tools instantly.
-            </p>
-
-            <button
-              onClick={() => navigate("/equipment")}
-              className="mt-5 bg-green-600 text-white px-5 py-2 rounded-xl"
+      {/* ── Features ─────────────────────────────────────────────────── */}
+      <div>
+        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">Platform Features</h2>
+        <div className="grid gap-6 md:grid-cols-3">
+          {[
+            {
+              title: 'Equipment Marketplace',
+              desc: 'Rent tractors, tillers, and farming tools from nearby farmers at fair daily rates.',
+              img: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?q=80&w=800&auto=format&fit=crop',
+              to: '/equipment',
+              tag: 'Equipment',
+              tagColor: 'badge-yellow',
+            },
+            {
+              title: 'Mandi Pool Transport',
+              desc: 'Share transport costs to the mandi. Join a pool and reduce logistics expenses.',
+              img: 'https://images.unsplash.com/photo-1523741543316-beb7fc7023d8?q=80&w=800&auto=format&fit=crop',
+              to: '/mandi',
+              tag: 'Transport',
+              tagColor: 'badge-blue',
+            },
+            {
+              title: 'Secure Payments',
+              desc: 'Record payments with screenshot proof. Full transaction history for transparency.',
+              img: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?q=80&w=800&auto=format&fit=crop',
+              to: '/payment',
+              tag: 'Finance',
+              tagColor: 'badge-green',
+            },
+          ].map(({ title, desc, img, to, tag, tagColor }, i) => (
+            <motion.div
+              key={title}
+              className="card overflow-hidden cursor-pointer group"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * i + 0.3 }}
+              whileHover={{ y: -4 }}
+              onClick={() => navigate(to)}
             >
-              Open
-            </button>
-          </div>
-
-          {/* CARD */}
-          <div className="bg-white rounded-3xl shadow-xl p-6 hover:-translate-y-2 transition">
-
-            <div className="bg-blue-100 w-fit p-4 rounded-2xl">
-              <Truck size={40} className="text-blue-700" />
-            </div>
-
-            <h2 className="text-2xl font-bold mt-5 text-gray-800">
-              Transport
-            </h2>
-
-            <p className="text-gray-500 mt-3">
-              Shared mandi logistics and transport pooling.
-            </p>
-
-            <button
-              onClick={() => navigate("/mandi")}
-              className="mt-5 bg-blue-600 text-white px-5 py-2 rounded-xl"
-            >
-              Open
-            </button>
-          </div>
-
-          {/* CARD */}
-          <div className="bg-white rounded-3xl shadow-xl p-6 hover:-translate-y-2 transition">
-
-            <div className="bg-purple-100 w-fit p-4 rounded-2xl">
-              <Users size={40} className="text-purple-700" />
-            </div>
-
-            <h2 className="text-2xl font-bold mt-5 text-gray-800">
-              Farmers
-            </h2>
-
-            <p className="text-gray-500 mt-3">
-              Connected village farming community network.
-            </p>
-
-            <button
-              onClick={() => navigate("/user")}
-              className="mt-5 bg-purple-600 text-white px-5 py-2 rounded-xl"
-            >
-              Open
-            </button>
-          </div>
-
-          {/* CARD */}
-          <div className="bg-white rounded-3xl shadow-xl p-6 hover:-translate-y-2 transition">
-
-            <div className="bg-red-100 w-fit p-4 rounded-2xl">
-              <MapPin size={40} className="text-red-700" />
-            </div>
-
-            <h2 className="text-2xl font-bold mt-5 text-gray-800">
-              Live Map
-            </h2>
-
-            <p className="text-gray-500 mt-3">
-              Real-time equipment location tracking.
-            </p>
-
-            <button
-              onClick={() => navigate("/map")}
-              className="mt-5 bg-red-600 text-white px-5 py-2 rounded-xl"
-            >
-              Open
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ACTION IMAGES */}
-      <div className="max-w-7xl mx-auto px-4 pb-16">
-
-        <div className="grid md:grid-cols-3 gap-8">
-
-          <div className="bg-white rounded-3xl overflow-hidden shadow-2xl">
-
-            <img
-              src="https://images.unsplash.com/photo-1500595046743-cd271d694d30?q=80&w=1200&auto=format&fit=crop"
-              alt=""
-              className="h-60 w-full object-cover"
-            />
-
-            <div className="p-6">
-              <h2 className="text-3xl font-bold text-gray-800">
-                Equipment Booking
-              </h2>
-
-              <p className="text-gray-500 mt-3">
-                Rent farming machines easily from nearby farmers.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl overflow-hidden shadow-2xl">
-
-            <img
-              src="https://images.unsplash.com/photo-1523741543316-beb7fc7023d8?q=80&w=1200&auto=format&fit=crop"
-              alt=""
-              className="h-60 w-full object-cover"
-            />
-
-            <div className="p-6">
-              <h2 className="text-3xl font-bold text-gray-800">
-                Mandi Pool
-              </h2>
-
-              <p className="text-gray-500 mt-3">
-                Share transport and reduce mandi costs.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl overflow-hidden shadow-2xl">
-
-            <img
-              src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?q=80&w=1200&auto=format&fit=crop"
-              alt=""
-              className="h-60 w-full object-cover"
-            />
-
-            <div className="p-6">
-              <h2 className="text-3xl font-bold text-gray-800">
-                Payments
-              </h2>
-
-              <p className="text-gray-500 mt-3">
-                Secure online payment system for farmers.
-              </p>
-            </div>
-          </div>
-
+              <div className="relative h-48 overflow-hidden">
+                <img
+                  src={img}
+                  alt={title}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                <span className={`badge ${tagColor} absolute left-3 top-3`}>{tag}</span>
+              </div>
+              <div className="p-5">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100">{title}</h3>
+                <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">{desc}</p>
+                <span className="mt-3 flex items-center gap-1 text-sm font-semibold text-emerald-600 group-hover:gap-2 transition-all">
+                  Explore <ArrowRight size={14} />
+                </span>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </div>
