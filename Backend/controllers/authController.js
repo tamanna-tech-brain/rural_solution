@@ -183,9 +183,10 @@ export const verifyEmail = async (req, res) => {
       });
     }
 
-    // CLEAR OTP
+    // CLEAR OTP AND MARK VERIFIED
     user.emailVerificationCode = undefined;
     user.emailVerificationCodeExpires = undefined;
+    user.verified = true;
 
     await user.save();
 

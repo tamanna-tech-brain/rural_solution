@@ -1,29 +1,38 @@
 import express from "express";
+import Notification from "../models/Notification.js";
 import {
   createNotification,
   getNotifications,
   markAsRead,
-  updateNotification,
   deleteNotification,
 } from "../controllers/notificationController.js";
-
 import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+// All notification routes require auth
+router.use(authMiddleware);
+
 // CREATE
-router.post("/", authMiddleware, createNotification);
+router.post("/", createNotification);
 
-// READ (ANYONE LOGGED IN)
-router.get("/", authMiddleware, getNotifications);
+// GET my notifications
+router.get("/", getNotifications);
 
-// MARK READ
-router.put("/:id", authMiddleware, markAsRead);
+// MARK ALL as read — must come before /:id
+router.put("/mark-all-read", async (req, res) => {
+  try {
+    await Notification.updateMany({ userId: req.user.id }, { read: true });
+    res.json({ success: true, message: "All notifications marked as read." });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
-// UPDATE (OWNER ONLY)
-router.patch("/:id", authMiddleware, updateNotification);
+// MARK SINGLE as read  /:id/read
+router.put("/:id/read", markAsRead);
 
-// DELETE (OWNER ONLY)
-router.delete("/:id", authMiddleware, deleteNotification);
+// DELETE
+router.delete("/:id", deleteNotification);
 
 export default router;

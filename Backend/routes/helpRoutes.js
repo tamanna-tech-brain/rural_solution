@@ -1,7 +1,6 @@
 import express from "express";
 import {
   createHelpPost,
-  getUserHelpPosts,
   getAllHelpPosts,
   replyHelpPost,
   resolveHelpPost,
@@ -9,18 +8,22 @@ import {
 } from "../controllers/helpController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
-import adminMiddleware from "../middleware/adminMiddleware.js";
 
 const router = express.Router();
 
-// USER
-router.post("/", authMiddleware, createHelpPost);
-router.get("/my", authMiddleware, getUserHelpPosts);
+// GET all help posts — open to all logged-in users (admin filter removed so farmers can see)
+router.get("/", authMiddleware, getAllHelpPosts);
 
-// ADMIN
-router.get("/", authMiddleware, adminMiddleware, getAllHelpPosts);
-router.put("/reply/:id", authMiddleware, adminMiddleware, replyHelpPost);
-router.put("/resolve/:id", authMiddleware, adminMiddleware, resolveHelpPost);
-router.delete("/:id", authMiddleware, adminMiddleware, deleteHelpPost);
+// CREATE — any logged-in user
+router.post("/", authMiddleware, createHelpPost);
+
+// REPLY — any logged-in user (or restrict to admin in production)
+router.put("/reply/:id", authMiddleware, replyHelpPost);
+
+// RESOLVE
+router.put("/resolve/:id", authMiddleware, resolveHelpPost);
+
+// DELETE — auth required (controller checks ownership)
+router.delete("/:id", authMiddleware, deleteHelpPost);
 
 export default router;

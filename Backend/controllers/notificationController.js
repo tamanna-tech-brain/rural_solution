@@ -10,10 +10,11 @@ export const createNotification = async (req, res) => {
   }
 };
 
-// GET ALL (ANYONE CAN SEE)
+// GET MY NOTIFICATIONS (logged-in user only)
 export const getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find()
+    const notifications = await Notification.find({ userId: req.user.id })
+      .sort({ createdAt: -1 })
       .populate("userId", "name email");
 
     res.json(notifications);
