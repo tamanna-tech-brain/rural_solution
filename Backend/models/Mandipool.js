@@ -85,6 +85,11 @@ const mandiPoolSchema = new mongoose.Schema({
   },
 });
 
+// Indexes for performance
+mandiPoolSchema.index({ ownerId: 1 });
+mandiPoolSchema.index({ mandiDate: 1 });
+mandiPoolSchema.index({ status: 1 });
+
 export default mongoose.model(
   "MandiPool",
   mandiPoolSchema

@@ -45,7 +45,7 @@ const UserPage = () => {
   const [loading, setLoading] = useState(false);
 
   const [registerData, setRegisterData] = useState({ name: '', email: '', phone: '', village: '', region: '', password: '' });
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [loginData, setLoginData] = useState({ email: '', password: '', rememberMe: false });
   const [otpData, setOtpData] = useState({ email: '', otp: '' });
   const [editData, setEditData] = useState({});
 
@@ -91,7 +91,7 @@ const UserPage = () => {
     setLoading(true);
     try {
       const res = await verifyEmail({ email: otpData.email, otp: otpData.otp });
-      login(res.data.user, res.data.token);
+      login(res.data.user, res.data.token, res.data.refreshToken);
       toast.success('Login successful! Welcome 🚀');
       navigate('/');
     } catch (err) {
@@ -256,6 +256,20 @@ const UserPage = () => {
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Welcome Back</h2>
                 <InputField icon={Mail} placeholder="Email" value={loginData.email}    onChange={e => setLoginData(p=>({...p,email:e.target.value}))} />
                 <InputField icon={Lock} type="password" placeholder="Password" value={loginData.password} onChange={e => setLoginData(p=>({...p,password:e.target.value}))} />
+                <div className="flex items-center justify-between mt-2 mb-4">
+                  <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={loginData.rememberMe}
+                      onChange={e => setLoginData(p=>({...p,rememberMe:e.target.checked}))}
+                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    Remember me
+                  </label>
+                  <button onClick={() => navigate('/forgot-password')} className="text-sm font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400">
+                    Forgot password?
+                  </button>
+                </div>
                 <button onClick={handleLogin} disabled={loading} className="btn btn-primary w-full justify-center">
                   {loading ? 'Sending OTP…' : <><span>Login</span><ArrowRight size={16} /></>}
                 </button>

@@ -5,6 +5,7 @@ import {
   Tractor, Store, Users, MapPin, BadgeDollarSign, ShieldAlert,
   CalendarRange, TrendingUp, Globe, ArrowRight, Wheat,
 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import useAuth from '../hooks/useAuth';
 import API from '../api/api';
 
@@ -172,6 +173,38 @@ const Dashboard = () => {
           </p>
         )}
       </div>
+
+      {/* ── Revenue Trends Chart (Admin Only) ────────────────────────── */}
+      {user?.role === 'admin' && stats && (
+        <div className="card p-6">
+          <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <TrendingUp size={20} className="text-emerald-500" /> Revenue & Activity Trends
+          </h2>
+          <div className="h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={[
+                { name: 'Mon', revenue: 4000, bookings: 24 },
+                { name: 'Tue', revenue: 3000, bookings: 13 },
+                { name: 'Wed', revenue: 2000, bookings: 98 },
+                { name: 'Thu', revenue: 2780, bookings: 39 },
+                { name: 'Fri', revenue: 1890, bookings: 48 },
+                { name: 'Sat', revenue: 2390, bookings: 38 },
+                { name: 'Sun', revenue: 3490, bookings: 43 },
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(value) => `₹${value}`} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  cursor={{ stroke: '#f1f5f9', strokeWidth: 2 }}
+                />
+                <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 0 }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="bookings" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, fill: '#6366f1', strokeWidth: 0 }} activeDot={{ r: 6, strokeWidth: 0 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* ── Quick Actions ────────────────────────────────────────────── */}
       <div>

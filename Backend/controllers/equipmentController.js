@@ -28,11 +28,28 @@ export const createEquipment = async (req, res) => {
   }
 };
 
-// GET ALL
+// GET ALL (with pagination, sorting, filtering)
 export const getAllEquipment = async (req, res) => {
   try {
-    const data = await Equipment.find().populate("ownerId");
-    res.json(data);
+    const { page = 1, limit = 10, sort = "-createdAt", type, location } = req.query;
+    const query = {};
+    if (type) query.type = new RegExp(type, "i");
+    if (location) query.location = new RegExp(location, "i");
+
+    const data = await Equipment.find(query)
+      .populate("ownerId", "name phone village trustScore")
+      .sort(sort)
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const count = await Equipment.countDocuments(query);
+
+    res.json({
+      data,
+      totalPages: Math.ceil(count / limit),
+      currentPage: Number(page),
+      totalItems: count,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

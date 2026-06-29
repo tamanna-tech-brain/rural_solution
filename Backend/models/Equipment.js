@@ -62,6 +62,11 @@ const equipmentSchema = new mongoose.Schema(
   }
 );
 
+// Indexes for performance
+equipmentSchema.index({ ownerId: 1 });
+equipmentSchema.index({ type: 1, location: 1 });
+equipmentSchema.index({ isBooked: 1 });
+
 const Equipment = mongoose.model(
   "Equipment",
   equipmentSchema

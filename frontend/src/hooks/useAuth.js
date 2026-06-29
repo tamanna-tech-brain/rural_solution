@@ -7,8 +7,8 @@ const useAuth = () => {
   const navigate = useNavigate();
   const { user, token, isAuthenticated } = useSelector((state) => state.auth);
 
-  const login = (userData, authToken) => {
-    dispatch(setUser({ user: userData, token: authToken }));
+  const login = (userData, authToken, refreshToken) => {
+    dispatch(setUser({ user: userData, token: authToken, refreshToken }));
   };
 
   const logoutUser = () => {

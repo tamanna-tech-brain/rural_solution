@@ -38,8 +38,8 @@ const EquipmentPage = () => {
     try {
       setLoading(true);
       const [eqRes, usrRes] = await Promise.all([getEquipment(), getUsers()]);
-      setEquipments(eqRes.data || []);
-      setUsers(usrRes.data || []);
+      setEquipments(eqRes.data.data || eqRes.data || []);
+      setUsers(usrRes.data.data || usrRes.data || []);
     } catch {
       toast.error('Failed to load equipment.');
     } finally {

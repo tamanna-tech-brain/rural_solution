@@ -18,13 +18,35 @@ API.interceptors.request.use(
 // ── Response Interceptor — auto-logout on 401 ─────────────────────────────
 API.interceptors.response.use(
   (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      // Token expired — clear auth state
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      if (!window.location.pathname.includes("/user")) {
-        window.location.href = "/user";
+  async (err) => {
+    const originalRequest = err.config;
+    
+    // If 401 and we haven't retried yet
+    if (err.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        const refreshToken = localStorage.getItem("refreshToken");
+        if (!refreshToken) throw new Error("No refresh token");
+
+        // Attempt to get a new access token
+        const { data } = await axios.post(`${API.defaults.baseURL}/auth/refresh-token`, { refreshToken });
+        
+        localStorage.setItem("token", data.token);
+        if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+
+        // Update the original request header and retry
+        originalRequest.headers.Authorization = `Bearer ${data.token}`;
+        return API(originalRequest);
+      } catch (refreshError) {
+        // Refresh token failed, clear state
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+        if (!window.location.pathname.includes("/user") && !window.location.pathname.includes("/forgot-password") && !window.location.pathname.includes("/reset-password")) {
+          window.location.href = "/user";
+        }
+        return Promise.reject(refreshError);
       }
     }
     return Promise.reject(err);
@@ -36,6 +58,8 @@ export const registerUser          = (data)      => API.post("/auth/register", d
 export const loginUser             = (data)      => API.post("/auth/login", data);
 export const verifyEmail           = (data)      => API.post("/auth/verify-email", data);
 export const resendVerificationOtp = (data)      => API.post("/auth/resend-otp", data);
+export const forgotPassword        = (data)      => API.post("/auth/forgot-password", data);
+export const resetPassword         = (data)      => API.post("/auth/reset-password", data);
 
 // ── USERS ─────────────────────────────────────────────────────────────────
 export const getUsers    = ()        => API.get("/users");

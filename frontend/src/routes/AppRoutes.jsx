@@ -17,6 +17,8 @@ const TripPage       = lazy(() => import('../pages/TripPage'));
 const HelpDeskPage   = lazy(() => import('../pages/HelpDeskPage'));
 const AdminPage      = lazy(() => import('../pages/AdminPage'));
 const ProfilePage    = lazy(() => import('../pages/ProfilePage'));
+const ForgotPassword = lazy(() => import('../pages/ForgotPasswordPage'));
+const ResetPassword  = lazy(() => import('../pages/ResetPasswordPage'));
 const NotFound       = lazy(() => import('../pages/NotFound'));
 
 const Loading = () => (
@@ -32,8 +34,10 @@ const AppRoutes = () => (
       <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
 
       {/* ── Auth / Profile ── */}
-      <Route path="/user"    element={<AppLayout><UserPage /></AppLayout>} />
-      <Route path="/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
+      <Route path="/user"            element={<AppLayout><UserPage /></AppLayout>} />
+      <Route path="/profile"         element={<AppLayout><ProfilePage /></AppLayout>} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password"  element={<ResetPassword />} />
 
       {/* ── Equipment ── */}
       <Route path="/equipment" element={<AppLayout><EquipmentPage /></AppLayout>} />

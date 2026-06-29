@@ -40,8 +40,8 @@ const MandiPage = () => {
     try {
       setLoading(true);
       const [mRes, uRes] = await Promise.all([getMandi(), getUsers()]);
-      setMandiList(mRes.data || []);
-      setUsers(uRes.data || []);
+      setMandiList(mRes.data.data || mRes.data || []);
+      setUsers(uRes.data.data || uRes.data || []);
     } catch { toast.error('Failed to load mandi pools.'); }
     finally { setLoading(false); }
   };

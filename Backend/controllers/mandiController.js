@@ -16,15 +16,29 @@ export const createMandi = async (req, res) => {
   }
 };
 
-// GET ALL
+// GET ALL (with pagination, sorting, filtering)
 export const getMandi = async (req, res) => {
   try {
-    const data = await MandiPool.find()
+    const { page = 1, limit = 10, sort = "-createdAt", location, status } = req.query;
+    const query = {};
+    if (location) query.mandiLocation = new RegExp(location, "i");
+    if (status) query.status = status;
+
+    const data = await MandiPool.find(query)
       .populate({ path: "ownerId", select: "name email phone village" })
       .populate({ path: "farmersJoined.farmerId", select: "name village" })
-      .sort({ createdAt: -1 });
+      .sort(sort)
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
 
-    return res.status(200).json(data);
+    const count = await MandiPool.countDocuments(query);
+
+    return res.status(200).json({
+      data,
+      totalPages: Math.ceil(count / limit),
+      currentPage: Number(page),
+      totalItems: count,
+    });
   } catch (err) {
     console.error("GET MANDI ERROR:", err);
     return res.status(500).json({ success: false, message: err.message });
