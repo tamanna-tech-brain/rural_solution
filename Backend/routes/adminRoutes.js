@@ -6,11 +6,15 @@ import {
   getAllUsers,
   updateUserRole,
   deactivateUser,
+  getPublicOverview,
 } from "../controllers/adminController.js";
 
 const router = express.Router();
 
-// All admin routes require auth + admin role
+// Public platform overview stats (open to all farmers/visitors)
+router.get("/overview", getPublicOverview);
+
+// All admin routes below require auth + admin role
 router.use(authMiddleware, adminMiddleware);
 
 router.get("/stats", getDashboardStats);

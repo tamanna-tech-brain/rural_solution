@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CalendarRange, Trash2, Edit2, CheckCircle, Clock } from 'lucide-react';
+import { CalendarRange, Trash2, Edit2 } from 'lucide-react';
 import {
-  getBookings, getEquipment, updateBooking, deleteBooking,
+  getBookings, updateBooking, deleteBooking,
   getBookingById, createBooking, updateMandiStatus, getEquipmentById, getMandiById,
 } from '../api/api';
 import { CardSkeleton } from '../components/LoadingSkeleton';

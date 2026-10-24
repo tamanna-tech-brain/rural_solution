@@ -7,21 +7,18 @@ import { otpEmailTemplate, welcomeEmailTemplate } from "../utils/emailTemplates.
 let devTransporter;
 
 const createTransporter = async () => {
-  if (
-    process.env.MAIL_HOST &&
-    process.env.MAIL_USER &&
-    process.env.MAIL_PASS
-  ) {
+  const host = process.env.MAIL_HOST || process.env.SMTP_HOST;
+  const user = process.env.MAIL_USER || process.env.SMTP_USER;
+  const pass = process.env.MAIL_PASS || process.env.SMTP_PASS;
+  const port = process.env.MAIL_PORT || process.env.SMTP_PORT || 587;
+  const secure = process.env.MAIL_SECURE === "true" || Number(port) === 465;
+
+  if (host && user && pass) {
     return nodemailer.createTransport({
-      host: process.env.MAIL_HOST,
-      port: process.env.MAIL_PORT
-        ? Number(process.env.MAIL_PORT)
-        : 587,
-      secure: process.env.MAIL_SECURE === "true",
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
+      host,
+      port: Number(port),
+      secure,
+      auth: { user, pass },
     });
   }
 
@@ -57,8 +54,10 @@ const sendOtpEmail = async (user, type = "Verification") => {
 
   await user.save();
 
+  const fromEmail = process.env.MAIL_FROM || process.env.MAIL_USER || process.env.SMTP_USER || transporter.options?.auth?.user || "no-reply@krishipool.org";
+
   await transporter.sendMail({
-    from: process.env.MAIL_FROM || process.env.MAIL_USER,
+    from: fromEmail,
     to: user.email,
     subject: `Your KrishiPool ${type} Code`,
     html: otpEmailTemplate(otp, type),
@@ -67,22 +66,26 @@ const sendOtpEmail = async (user, type = "Verification") => {
 
 const sendWelcomeEmail = async (user) => {
   const transporter = await createTransporter();
+  const fromEmail = process.env.MAIL_FROM || process.env.MAIL_USER || process.env.SMTP_USER || transporter.options?.auth?.user || "no-reply@krishipool.org";
+
   await transporter.sendMail({
-    from: process.env.MAIL_FROM || process.env.MAIL_USER,
+    from: fromEmail,
     to: user.email,
     subject: "Welcome to KrishiPool! 🌱",
     html: welcomeEmailTemplate(user.name),
   });
 };
 
-const generateTokens = (userId) => {
+const generateTokens = (user) => {
+  const userId = user._id || user.id || user;
+  const role = user.role || "farmer";
   const accessToken = jwt.sign(
-    { id: userId },
+    { id: userId, role },
     process.env.JWT_SECRET,
     { expiresIn: "1h" }
   );
   const refreshToken = jwt.sign(
-    { id: userId },
+    { id: userId, role },
     process.env.JWT_SECRET + "_refresh",
     { expiresIn: "7d" }
   );
@@ -187,7 +190,7 @@ export const verifyEmail = async (req, res) => {
     user.emailVerificationCodeExpires = undefined;
     user.verified = true;
 
-    const { accessToken, refreshToken } = generateTokens(user._id);
+    const { accessToken, refreshToken } = generateTokens(user);
     user.refreshToken = refreshToken;
 
     await user.save();
@@ -239,15 +242,15 @@ export const refreshToken = async (req, res) => {
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET + "_refresh", (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET + "_refresh", async (err, decoded) => {
       if (err) {
         return res.status(403).json({ message: "Refresh token expired" });
       }
 
-      const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id);
+      const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
       
       user.refreshToken = newRefreshToken;
-      user.save();
+      await user.save();
 
       res.cookie("refreshToken", newRefreshToken, {
         httpOnly: true,

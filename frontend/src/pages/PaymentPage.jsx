@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, BadgeDollarSign, Trash2, X, Upload, ExternalLink } from 'lucide-react';
-import { createPayment, getPayments, updatePayment, deletePayment } from '../api/api';
+import { createPayment, getPayments, deletePayment } from '../api/api';
 import { getUsers, getBookings, getMandi } from '../api/api';
 import { CardSkeleton } from '../components/LoadingSkeleton';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -34,13 +34,21 @@ const PaymentPage = () => {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [pRes, uRes, bRes, mRes] = await Promise.all([getPayments(), getUsers(), getBookings(), getMandi()]);
-      setPayments(pRes.data || []);
-      setUsers(uRes.data || []);
+      const [pRes, uRes, bRes, mRes] = await Promise.all([
+        getPayments().catch(() => ({ data: [] })),
+        user ? getUsers().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+        getBookings().catch(() => ({ data: [] })),
+        getMandi().catch(() => ({ data: [] })),
+      ]);
+      setPayments(Array.isArray(pRes.data) ? pRes.data : pRes.data?.data || []);
+      setUsers(Array.isArray(uRes.data) ? uRes.data : uRes.data?.data || []);
       setBookings(Array.isArray(bRes.data) ? bRes.data : bRes.data?.data || []);
-      setMandis(mRes.data || []);
-    } catch { toast.error('Failed to load payments.'); }
-    finally { setLoading(false); }
+      setMandis(Array.isArray(mRes.data) ? mRes.data : mRes.data?.data || []);
+    } catch {
+      toast.error('Failed to load payments.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchAll(); }, []);

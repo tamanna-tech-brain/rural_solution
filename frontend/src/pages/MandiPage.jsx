@@ -39,11 +39,24 @@ const MandiPage = () => {
   const fetchAll = async () => {
     try {
       setLoading(true);
-      const [mRes, uRes] = await Promise.all([getMandi(), getUsers()]);
-      setMandiList(mRes.data.data || mRes.data || []);
-      setUsers(uRes.data.data || uRes.data || []);
-    } catch { toast.error('Failed to load mandi pools.'); }
-    finally { setLoading(false); }
+      const mRes = await getMandi().catch(() => ({ data: [] }));
+      const mandiData = mRes.data?.data || (Array.isArray(mRes.data) ? mRes.data : []);
+      setMandiList(mandiData);
+
+      // Load users only if logged in (for owner/farmer selection)
+      if (user) {
+        try {
+          const uRes = await getUsers();
+          setUsers(uRes.data?.data || (Array.isArray(uRes.data) ? uRes.data : []));
+        } catch {
+          setUsers([]);
+        }
+      }
+    } catch {
+      toast.error('Failed to load mandi pools.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchAll(); }, []);

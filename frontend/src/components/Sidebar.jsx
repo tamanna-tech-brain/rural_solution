@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell, BadgeDollarSign, CalendarRange, LayoutDashboard,
@@ -23,7 +23,6 @@ const menuItems = [
 
 const Sidebar = ({ isOpen, onToggle }) => {
   const { user, logoutUser } = useAuth();
-  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
   const handleToggle = () => {

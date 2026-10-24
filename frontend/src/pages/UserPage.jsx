@@ -134,7 +134,7 @@ const UserPage = () => {
       await API.delete(`/users/${user._id}`);
       logoutUser();
       toast.success('Account deleted.');
-    } catch (err) {
+    } catch {
       toast.error('Delete failed.');
     } finally {
       setLoading(false);

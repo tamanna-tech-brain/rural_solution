@@ -1,9 +1,20 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Bell, Sun, Moon, Menu, Search, Wheat } from 'lucide-react';
+import { Bell, Sun, Moon, Menu, Wheat, Globe, Radio } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
-import { useDarkMode } from '../context/DarkModeContext';
+import useDarkMode from '../hooks/useDarkMode';
+
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'hi', label: 'हिंदी' },
+  { code: 'pa', label: 'ਪੰਜਾਬੀ' },
+  { code: 'mr', label: 'मराठी' },
+  { code: 'gu', label: 'ગુજરાતી' },
+  { code: 'bn', label: 'বাংলা' },
+  { code: 'te', label: 'తెలుగు' },
+  { code: 'ta', label: 'தமிழ்' },
+];
 
 // Map routes to breadcrumb labels
 const ROUTE_LABELS = {
@@ -26,11 +37,18 @@ const Navbar = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDark, toggleDark } = useDarkMode();
+  const [currentLang, setCurrentLang] = useState(localStorage.getItem('lang') || 'en');
 
   const pageTitle = ROUTE_LABELS[location.pathname] || 'KrishiPool';
 
+  const handleLangChange = (code) => {
+    setCurrentLang(code);
+    localStorage.setItem('lang', code);
+    window.dispatchEvent(new CustomEvent('krishiLangChanged', { detail: { lang: code } }));
+  };
+
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 py-3">
+    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-4 py-3 shadow-xs">
       <div className="flex items-center justify-between gap-4">
 
         {/* Left — menu + title */}
@@ -41,17 +59,39 @@ const Navbar = ({ onMenuClick }) => {
           >
             <Menu size={20} />
           </button>
-          <div className="hidden lg:flex items-center gap-2 text-xs text-slate-400">
-            <Wheat size={14} className="text-emerald-500" />
-            <span>KrishiPool</span>
+          <div className="hidden lg:flex items-center gap-2.5 text-xs text-slate-400">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200/60 dark:border-emerald-800/40">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <Radio size={11} className="text-emerald-600 dark:text-emerald-400" />
+              <span>APMC Grid Live</span>
+            </div>
             <span>/</span>
-            <span className="font-medium text-slate-700 dark:text-slate-200">{pageTitle}</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-100">{pageTitle}</span>
           </div>
           <h1 className="text-base font-bold text-slate-900 dark:text-slate-100 lg:hidden">{pageTitle}</h1>
         </div>
 
         {/* Right — actions */}
         <div className="flex items-center gap-2">
+
+          {/* Quick Language Selector */}
+          <div className="relative flex items-center">
+            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200">
+              <Globe size={14} className="text-emerald-600 dark:text-emerald-400" />
+              <select
+                value={currentLang}
+                onChange={(e) => handleLangChange(e.target.value)}
+                className="bg-transparent border-none text-xs font-semibold focus:ring-0 cursor-pointer pr-1"
+                aria-label="Language selection"
+              >
+                {LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code} className="dark:bg-slate-800 text-slate-900 dark:text-slate-100">
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {/* Dark mode toggle */}
           <motion.button

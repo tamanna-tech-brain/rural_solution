@@ -89,15 +89,14 @@ userSchema.index({ phone: 1 });
 userSchema.index({ region: 1 });
 
 // Cascading delete
-userSchema.pre("findOneAndDelete", async function (next) {
+userSchema.pre("findOneAndDelete", async function () {
   const doc = await this.model.findOne(this.getQuery());
   if (doc) {
     await mongoose.model("Equipment").deleteMany({ ownerId: doc._id });
     await mongoose.model("Booking").deleteMany({ renterId: doc._id });
     await mongoose.model("MandiPool").deleteMany({ ownerId: doc._id });
-    await mongoose.model("Notification").deleteMany({ recipient: doc._id });
+    await mongoose.model("Notification").deleteMany({ userId: doc._id });
   }
-  next();
 });
 
 export default mongoose.model("User", userSchema);

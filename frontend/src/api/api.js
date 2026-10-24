@@ -21,32 +21,33 @@ API.interceptors.response.use(
   async (err) => {
     const originalRequest = err.config;
     
-    // If 401 and we haven't retried yet
+    // If 401 and user had a session, attempt refresh
     if (err.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
-      try {
-        const refreshToken = localStorage.getItem("refreshToken");
-        if (!refreshToken) throw new Error("No refresh token");
+      const hadToken = Boolean(localStorage.getItem("token"));
+      const refreshToken = localStorage.getItem("refreshToken");
 
-        // Attempt to get a new access token
-        const { data } = await axios.post(`${API.defaults.baseURL}/auth/refresh-token`, { refreshToken });
-        
-        localStorage.setItem("token", data.token);
-        if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+      if (hadToken && refreshToken) {
+        try {
+          // Attempt to get a new access token
+          const { data } = await axios.post(`${API.defaults.baseURL}/auth/refresh-token`, { refreshToken });
+          
+          localStorage.setItem("token", data.token);
+          if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
 
-        // Update the original request header and retry
-        originalRequest.headers.Authorization = `Bearer ${data.token}`;
-        return API(originalRequest);
-      } catch (refreshError) {
-        // Refresh token failed, clear state
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
-        if (!window.location.pathname.includes("/user") && !window.location.pathname.includes("/forgot-password") && !window.location.pathname.includes("/reset-password")) {
-          window.location.href = "/user";
+          // Update the original request header and retry
+          originalRequest.headers.Authorization = `Bearer ${data.token}`;
+          return API(originalRequest);
+        } catch (refreshError) {
+          // Refresh token failed, clear state
+          localStorage.removeItem("token");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+          if (!window.location.pathname.includes("/user") && !window.location.pathname.includes("/forgot-password") && !window.location.pathname.includes("/reset-password")) {
+            window.location.href = "/user";
+          }
+          return Promise.reject(refreshError);
         }
-        return Promise.reject(refreshError);
       }
     }
     return Promise.reject(err);
@@ -116,6 +117,7 @@ export const replyToPost    = (id, data)  => API.put(`/help/reply/${id}`, data);
 export const deleteHelpPost = (id)        => API.delete(`/help/${id}`);
 
 // ── ADMIN ─────────────────────────────────────────────────────────────────
+export const getPublicOverview = ()        => API.get("/admin/overview");
 export const getAdminStats   = ()          => API.get("/admin/stats");
 export const getAdminUsers   = (params)    => API.get("/admin/users", { params });
 export const updateUserRole  = (id, role)  => API.put(`/admin/users/${id}/role`, { role });

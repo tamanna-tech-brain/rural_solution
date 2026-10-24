@@ -29,13 +29,21 @@ const DisputePage = () => {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [dRes, uRes, bRes, mRes] = await Promise.all([getDisputes(), getUsers(), getBookings(), getMandi()]);
-      setDisputes(dRes.data || []);
-      setUsers(uRes.data || []);
+      const [dRes, uRes, bRes, mRes] = await Promise.all([
+        getDisputes().catch(() => ({ data: [] })),
+        user ? getUsers().catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+        getBookings().catch(() => ({ data: [] })),
+        getMandi().catch(() => ({ data: [] })),
+      ]);
+      setDisputes(Array.isArray(dRes.data) ? dRes.data : dRes.data?.data || []);
+      setUsers(Array.isArray(uRes.data) ? uRes.data : uRes.data?.data || []);
       setBookings(Array.isArray(bRes.data) ? bRes.data : bRes.data?.data || []);
-      setMandis(mRes.data || []);
-    } catch { toast.error('Failed to load disputes.'); }
-    finally { setLoading(false); }
+      setMandis(Array.isArray(mRes.data) ? mRes.data : mRes.data?.data || []);
+    } catch {
+      toast.error('Failed to load disputes.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchAll(); }, []);

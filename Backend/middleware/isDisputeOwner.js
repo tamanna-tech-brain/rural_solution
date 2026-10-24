@@ -8,7 +8,8 @@ export const isDisputeOwner = async (req, res, next) => {
       return res.status(404).json({ message: "Dispute not found" });
     }
 
-    if (dispute.raisedBy.toString() !== req.user._id.toString()) {
+    const userId = req.user.id || req.user._id;
+    if (dispute.raisedBy.toString() !== userId?.toString()) {
       return res.status(403).json({ message: "Not allowed" });
     }
 

@@ -37,15 +37,23 @@ const EquipmentPage = () => {
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const [eqRes, usrRes] = await Promise.all([getEquipment(), getUsers()]);
-      setEquipments(eqRes.data.data || eqRes.data || []);
-      setUsers(usrRes.data.data || usrRes.data || []);
+      const eqRes = await getEquipment().catch(() => ({ data: [] }));
+      setEquipments(eqRes.data?.data || (Array.isArray(eqRes.data) ? eqRes.data : []));
+
+      if (user) {
+        try {
+          const usrRes = await getUsers();
+          setUsers(usrRes.data?.data || (Array.isArray(usrRes.data) ? usrRes.data : []));
+        } catch {
+          setUsers([]);
+        }
+      }
     } catch {
       toast.error('Failed to load equipment.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 

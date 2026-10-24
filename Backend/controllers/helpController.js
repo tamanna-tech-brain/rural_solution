@@ -47,6 +47,9 @@ export const replyHelpPost = async (req, res) => {
     const { message } = req.body;
 
     const post = await HelpPost.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "Help ticket not found" });
+    }
 
     post.replies.push({
       message,
@@ -67,6 +70,9 @@ export const replyHelpPost = async (req, res) => {
 export const resolveHelpPost = async (req, res) => {
   try {
     const post = await HelpPost.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "Help ticket not found" });
+    }
     post.status = "resolved";
     await post.save();
 

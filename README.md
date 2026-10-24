@@ -1,189 +1,236 @@
-# 🌾 KrishiPool — Rural Agri-Coordination Platform
+# 🌾 KrishiPool (कृषिपूल) — Rural Agri-Coordination Platform
 
-> A modern SaaS platform connecting Indian farmers for **equipment rental**, **mandi transport pooling**, **payments**, **dispute resolution**, and **real-time GPS tracking**.
+[![Node.js Version](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg?style=for-the-badge&logo=node.js)](https://nodejs.org/)
+[![React Version](https://img.shields.io/badge/React-19.2.6-blue.svg?style=for-the-badge&logo=react)](https://react.dev/)
+[![Express Version](https://img.shields.io/badge/Express-5.2.1-black.svg?style=for-the-badge&logo=express)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas%20Ready-emerald.svg?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
+[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-v3%20%2B%20v4-38bdf8.svg?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-MIT-amber.svg?style=for-the-badge)](LICENSE)
 
----
-
-## 🚀 Tech Stack
-
-| Layer     | Technology |
-|-----------|-----------|
-| Frontend  | React 19 + Vite + Tailwind CSS + Framer Motion |
-| State     | Redux Toolkit |
-| Backend   | Node.js + Express 5 + MongoDB + Mongoose |
-| Auth      | JWT + OTP Email Verification |
-| Storage   | Cloudinary (images) |
-| Maps      | React-Leaflet + OpenStreetMap |
-| Charts    | Recharts |
-| Deployment| Docker + Nginx + PM2 |
+> A production-grade **Rural Agri-Coordination SaaS Platform** empowering smallholder farmers through **peer-to-peer machinery rental**, **shared mandi freight pooling**, **transparent escrow settlements**, **community dispute mediation**, and **live GPS tracking**.
 
 ---
 
-## 📦 Project Structure
+## 📸 Platform UI Showcase
+
+### 1. Kisan Command Dashboard & Live APMC Price Ticker
+*Features real-time APMC Mandi price ticker, interactive transport cost-split calculator, field agro-weather advisory, and live database platform metrics.*
+
+![KrishiPool Command Dashboard](screenshots/dashboard.png)
+
+---
+
+### 2. Peer-to-Peer Equipment Marketplace
+*Rent tractors, rotavators, drone sprayers, laser levelers, and harvesters directly from nearby farmers with transparent daily pricing and verified owners.*
+
+![Equipment Marketplace](screenshots/equipment.png)
+
+---
+
+### 3. Mandi Freight Transport Pooling
+*Share freight trolleys and trucks to the mandi, reducing logistics costs by up to 45% for smallholder farmers.*
+
+![Mandi Pool Transport](screenshots/mandi.png)
+
+---
+
+### 4. Interactive Booking Engine & Rental Logs
+*Track equipment leases, approval stages, delivery schedules, and return handoffs with status tracking.*
+
+![Bookings & Rental Manager](screenshots/bookings.png)
+
+---
+
+### 5. Live GPS Machinery & Truck Radar
+*Interactive Leaflet map showing active farm machinery and live mandi trucks in nearby villages with direct booking.*
+
+![Live GPS Equipment Radar](screenshots/map.png)
+
+---
+
+### 6. Escrow Payments & Proof-of-Transaction Audit
+*Audited transaction tracking with UPI proof-of-payment receipts, QR payments, and status workflows.*
+
+![Payment & Escrow Proofs](screenshots/05_payment.png)
+
+---
+
+### 7. Community Dispute & Mediation Desk
+*Fair conflict resolution for fuel adjustments, breakdowns, delay disputes, and panchayat-style mediation.*
+
+![Dispute & Mediation Desk](screenshots/06_dispute.png)
+
+---
+
+### 8. Kisan Help Desk & Knowledge Base
+*Agricultural advisory, common rental FAQs, community troubleshooting, and platform support.*
+
+![Kisan Help Desk](screenshots/09_helpdesk.png)
+
+---
+
+### 9. Multi-Role Farmer Authentication & Onboarding
+*Email & OTP verification, role-based access control (Farmer, Equipment Owner, Driver, Admin).*
+
+![Farmer Authentication & Sign In](screenshots/08_user_login.png)
+
+---
+
+## 💡 Core Architecture & Features
 
 ```
-rural_solution/
-├── Backend/
-│   ├── config/          # DB, Cloudinary config
-│   ├── controllers/     # Auth, Equipment, Booking, Mandi, Payment, Dispute, Admin
-│   ├── middleware/      # Auth, Admin, Upload, ErrorHandler
-│   ├── models/          # User, Equipment, Booking, MandiPool, Payment, Dispute, Notification, HelpPost
-│   ├── routes/          # All API routes
-│   ├── services/        # Business logic services
-│   ├── app.js           # Express app setup
-│   ├── server.js        # Server entry point
-│   ├── Dockerfile
-│   ├── ecosystem.config.js  # PM2 config
-│   └── .env.example
-│
-├── frontend/
-│   ├── src/
-│   │   ├── api/         # Axios API layer
-│   │   ├── components/  # Sidebar, Navbar, ErrorBoundary, Skeletons, ConfirmDialog
-│   │   ├── context/     # DarkModeContext
-│   │   ├── hooks/       # useAuth, useToast, useDebounce
-│   │   ├── layout/      # AppLayout
-│   │   ├── pages/       # All pages
-│   │   ├── redux/       # Store, Slices
-│   │   └── routes/      # AppRoutes
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   └── .env.example
-│
-└── docker-compose.yml
+┌─────────────────────────────────────────────────────────────────┐
+│                     KrishiPool Client App                       │
+│    (React 19 • Vite • Tailwind • Framer Motion • Leaflet)       │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │ HTTP/JSON + JWT
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Express 5 Backend Gateway                    │
+│   Rate Limiting • Helmet • CORS • Cookie Auth • Trust Proxy     │
+└──────────────┬─────────────────────────┬────────────────────────┘
+               │                         │
+     ┌─────────┴─────────┐     ┌─────────┴─────────┐
+     ▼                   ▼     ▼                   ▼
+┌───────────┐      ┌───────────────┐         ┌───────────┐
+│  MongoDB  │      │  Cloudinary   │         │ SMTP Mail │
+│  Cluster  │      │ Media Storage │         │  Service  │
+└───────────┘      └───────────────┘         └───────────┘
 ```
+
+1. **Live Mandi APMC Ticker:** Real-time spot price ticker for Wheat, Mustard, Cotton, Basmati Paddy, Soybean, Chana, Potato, and Onion with 24-hour market trend indicators.
+2. **Dynamic Freight Split Calculator:** Interactive sliders calculating per-quintal savings when pooling transport vs solo vehicle booking.
+3. **P2P Equipment Marketplace:** Browse, filter, book, and list agricultural implements with machine condition grading (`Good`, `Average`, `Old`).
+4. **Mandi Pooling Engine:** Organize shared vehicle journeys to APMC wholesale markets, split fuel/freight among participating farmers based on produce weight.
+5. **Interactive GPS Radar:** Real-time geospatial map rendering equipment positions across rural regions with Leaflet & OpenStreetMap.
+6. **14 Regional Languages:** English, Hindi, Bengali, Gujarati, Kannada, Malayalam, Marathi, Punjabi, Tamil, Telugu, Urdu, Odia, Assamese, and Nepali.
+7. **Trust & Dispute System:** Farmer dispute lodging with evidence attachments and 24-hour admin mediation workflows.
 
 ---
 
-## ⚙️ Local Development Setup
+## 🛠️ Technology Stack
+
+| Layer | Technologies |
+|:---|:---|
+| **Frontend** | React 19, Vite, Tailwind CSS, Framer Motion, Lucide Icons, Recharts |
+| **State Management** | Redux Toolkit |
+| **Mapping & GIS** | React-Leaflet, Leaflet, OpenStreetMap |
+| **Backend API** | Node.js (>=18), Express 5, Mongoose, Helmet, Compression, Morgan |
+| **Database** | MongoDB Atlas (Multi-collection with cascading hooks) |
+| **Authentication** | JWT (Access + Refresh tokens), BcryptJS, OTP Email Verification |
+| **Media & Storage** | Cloudinary API, Multer |
+| **Email Service** | Nodemailer (Gmail SMTP / Custom SMTP) |
+| **DevOps & Containers** | Docker, Nginx, Vercel Serverless |
+
+---
+
+## 🚀 Quickstart & Local Setup
 
 ### Prerequisites
-- Node.js 20+
-- MongoDB (local or Atlas)
-- npm / pnpm
+- Node.js >= 18.0.0
+- MongoDB connection URI (or MongoDB Atlas)
+- npm or pnpm
 
-### 1. Backend
+### 1. Backend Setup
 
 ```bash
 cd Backend
 
-# Copy env file
+# Configure environment
 cp .env.example .env
-# → Edit .env with your MongoDB URI, JWT secret, Cloudinary keys, SMTP credentials
+# Edit .env with your MONGO_URI and JWT_SECRET
 
+# Install dependencies and start server
 npm install
 npm run dev
-# Runs on http://localhost:5000
 ```
+> Server starts on `http://localhost:5000` (Health check: `http://localhost:5000/health`)
 
-### 2. Frontend
+### 2. Frontend Setup
 
 ```bash
 cd frontend
 
-# Copy env file
+# Configure environment
 cp .env.example .env
-# → Set VITE_API_URL=http://localhost:5000/api
 
+# Install dependencies and start Vite dev server
 npm install
 npm run dev
-# Runs on http://localhost:5173
 ```
+> Client runs on `http://localhost:5176`
 
 ---
 
-## 🐳 Docker Deployment
+## 🌐 Cloud Deployment Guides
 
-```bash
-# Build and start all services
-docker-compose up -d --build
+### Deploying Backend on Vercel or Render
+1. Connect your repository to [Render](https://render.com/) or [Vercel](https://vercel.com/).
+2. Root directory: `Backend`.
+3. Set your environment variables in your deployment dashboard:
+   - `MONGO_URI`: Your MongoDB connection string
+   - `JWT_SECRET`: Random 64-character secret
+   - `CORS_ORIGIN`: Your production frontend URL
+4. Build command: `npm install`
+5. Start command: `node server.js` (or use `api/index.js` for Vercel serverless).
 
-# View logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
-
-# Stop
-docker-compose down
-```
-
-Services:
-- `http://localhost:80` — Frontend
-- `http://localhost:5000` — Backend API
-- `http://localhost:5000/api/health` — Health check
+### Deploying Frontend on Vercel
+1. Import the `frontend` folder into [Vercel](https://vercel.com/).
+2. Framework Preset: **Vite**.
+3. Build Command: `npm run build`.
+4. Output Directory: `dist`.
+5. Environment Variable: `VITE_API_URL=https://your-backend-domain.com/api`.
+6. SPA routing is already preconfigured via `frontend/vercel.json`.
 
 ---
 
-## 🚀 Production with PM2
+## 🔑 REST API Reference
+
+| Method | Endpoint | Access | Description |
+|:---|:---|:---|:---|
+| `GET` | `/health` | Public | System status and uptime health check |
+| `GET` | `/api/admin/overview` | Public | Live platform counts (users, machinery, bookings, mandi pools) |
+| `POST` | `/api/auth/register` | Public | Register new farmer account and send OTP |
+| `POST` | `/api/auth/login` | Public | User login with password or OTP |
+| `POST` | `/api/auth/verify-email` | Public | Verify 6-digit OTP code |
+| `POST` | `/api/auth/refresh-token` | Public | Renew expired access token |
+| `GET` | `/api/equipment` | Public | List equipment with search and filters |
+| `POST` | `/api/equipment` | Authenticated | Create equipment rental listing |
+| `GET` | `/api/mandi` | Public | Fetch active mandi transport pools |
+| `POST` | `/api/mandi` | Authenticated | Create new mandi transport pool |
+| `POST` | `/api/mandi/:id/join` | Authenticated | Join an existing mandi pool with crop weight |
+| `GET` | `/api/bookings` | Public/Auth | Fetch farmer booking history |
+| `POST` | `/api/bookings` | Authenticated | Create booking for machinery or transport |
+| `GET` | `/api/payments` | Authenticated | Fetch payment records and proofs |
+| `POST` | `/api/payments` | Authenticated | Upload payment receipt and screenshot |
+| `GET` | `/api/disputes` | Authenticated | List disputes and mediation status |
+| `POST` | `/api/disputes` | Authenticated | File new dispute |
+| `GET` | `/api/admin/stats` | Admin | Aggregate revenue, user, and equipment metrics |
+
+---
+
+## 🧪 Testing & Verification
+
+Run automated test suites across both tiers:
 
 ```bash
+# Run Backend API unit tests
 cd Backend
-cp .env.example .env
-# Edit .env for production
+npm test
 
-npm install --only=production
-npx pm2 start ecosystem.config.js --env production
-npx pm2 save
-npx pm2 startup
+# Run Frontend React component unit tests
+cd ../frontend
+npm test
+
+# Run Frontend linter
+npm run lint
+
+# Validate production build bundle
+npm run build
 ```
 
 ---
 
-## 🔑 API Endpoints
+## 📄 License
 
-| Method | Endpoint                       | Auth | Description |
-|--------|-------------------------------|------|-------------|
-| POST   | /api/auth/register             | —    | Register + send OTP |
-| POST   | /api/auth/login                | —    | Login + send OTP |
-| POST   | /api/auth/verify-email         | —    | Verify OTP → JWT |
-| GET    | /api/equipment                 | —    | List all equipment |
-| POST   | /api/equipment                 | ✅   | Add equipment |
-| GET    | /api/bookings                  | ✅   | List bookings |
-| POST   | /api/bookings                  | ✅   | Create booking |
-| GET    | /api/mandi                     | —    | List mandi pools |
-| POST   | /api/mandi/:id/join            | ✅   | Join a mandi pool |
-| GET    | /api/admin/stats               | 🛡️   | Dashboard stats (admin) |
-| GET    | /api/health                    | —    | Health check |
-
----
-
-## ✅ Key Improvements Made
-
-### Security Fixes
-- ✅ JWT-based ownership checks (not req.body user ID)
-- ✅ Rate limiting (global + auth-specific)
-- ✅ Helmet security headers
-- ✅ Removed API credentials from console logs
-- ✅ Auto-logout on 401 (token expiry)
-
-### Bug Fixes
-- ✅ Redux Provider missing from main.jsx
-- ✅ Wrong Redux slice filenames
-- ✅ `/booking` route crash without params
-- ✅ `req.user._id` vs `req.user.id` inconsistency
-- ✅ GPS interval memory leak in MandiPage
-- ✅ Duplicate navbar in Dashboard
-- ✅ Express 5 wildcard route syntax
-
-### New Features
-- ✅ Admin panel with charts and user management
-- ✅ Profile page with trust score
-- ✅ Dark mode with localStorage persistence
-- ✅ Toast notifications (replaced all alert() calls)
-- ✅ Confirm dialogs (replaced all confirm() calls)
-- ✅ Skeleton loading on all pages
-- ✅ Join Mandi Pool API endpoint
-- ✅ 404 Not Found page
-- ✅ Code splitting with React.lazy + Suspense
-- ✅ Docker + Nginx + PM2 deployment configs
-
----
-
-## 🌐 Languages Supported
-
-Hindi, Bengali, Gujarati, Kannada, Malayalam, Marathi, Punjabi, Tamil, Telugu, Urdu, Odia, Assamese, Nepali, English
-
----
-
-## 📝 License
-
-MIT
+This project is licensed under the **MIT License**.

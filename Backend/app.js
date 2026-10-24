@@ -7,6 +7,7 @@ import morgan from "morgan";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -23,27 +24,57 @@ import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
 
+// Trust reverse proxies (Render, Railway, Vercel, Heroku, AWS ALB, Cloudflare)
+app.set("trust proxy", 1);
+
+// ── Root & Health Check (for cloud load balancers & uptime monitors) ──────────
+app.get(["/", "/health", "/api/health"], (req, res) => {
+  res.status(200).json({
+    success: true,
+    name: "KrishiPool API",
+    status: "OK",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+    uptime: Math.floor(process.uptime()),
+  });
+});
+
 // ── Security ──────────────────────────────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }, // allow images to load
 }));
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173,http://localhost:5174,http://localhost:5175")
   .split(",")
-  .map((o) => o.trim());
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS blocked: ${origin}`));
+    // Allow non-browser requests (Postman, mobile apps, curl)
+    if (!origin) return callback(null, true);
+    
+    // Allow if origin is explicitly in allowed list or wildcard
+    if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+    
+    // In development or preview environments, allow any localhost
+    if (process.env.NODE_ENV !== "production" && /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel preview deployments if configured
+    if (origin.endsWith(".vercel.app")) {
+      return callback(null, true);
+    }
+
+    callback(new Error(`CORS policy blocked access from origin: ${origin}`));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 }));
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────────
@@ -66,6 +97,7 @@ app.use(globalLimiter);
 // ── Body Parsing ──────────────────────────────────────────────────────────────
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(cookieParser());
 
 // ── Compression ───────────────────────────────────────────────────────────────
 app.use(compression());
@@ -77,17 +109,6 @@ if (process.env.NODE_ENV !== "test") {
 
 // ── Static Files ──────────────────────────────────────────────────────────────
 app.use("/uploads", express.static("uploads"));
-
-// ── Health Check ──────────────────────────────────────────────────────────────
-app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development",
-    uptime: Math.floor(process.uptime()),
-  });
-});
 
 // ── API Routes ────────────────────────────────────────────────────────────────
 app.use("/api/auth", authLimiter, authRoutes);

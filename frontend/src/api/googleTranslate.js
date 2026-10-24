@@ -21,7 +21,7 @@ const LANGUAGE_CODE_MAP = {
 };
 
 const originals = new WeakMap();
-const NON_LATIN_SCRIPT = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F\u0D80-\u0DFF\u0E00-\u0E7F\u0F00-\u0FFF\u1000-\u109F\u1100-\u11FF\u1E00-\u1EFF]/;
+const NON_LATIN_SCRIPT = /[\p{sc=Devanagari}\p{sc=Bengali}\p{sc=Gujarati}\p{sc=Gurmukhi}\p{sc=Oriya}\p{sc=Tamil}\p{sc=Telugu}\p{sc=Kannada}\p{sc=Malayalam}\p{sc=Arabic}\p{sc=Thai}\p{sc=Tibetan}\p{sc=Myanmar}\p{sc=Hangul}]/u;
 const RTL_LANGUAGES = new Set(["ur", "sd", "ar", "fa", "he", "iw"]);
 
 function isTranslatableTextNode(node) {
@@ -41,7 +41,7 @@ function isTranslatableTextNode(node) {
 
   // Skip nodes that already contain non-English scripts until they have
   // been saved as originals. This avoids mangling names and mixed-language content.
-  const englishLike = /^[\x00-\x7F\s.,!?\-–—'"()0-9]+$/;
+  const englishLike = /^[\u0020-\u007E\s.,!?\-–—'"()0-9]+$/;
   if (!englishLike.test(text) && NON_LATIN_SCRIPT.test(text)) {
     return false;
   }

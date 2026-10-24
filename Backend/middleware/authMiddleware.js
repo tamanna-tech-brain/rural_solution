@@ -22,10 +22,13 @@ const authMiddleware = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Normalize: always expose req.user.id (string) regardless of JWT payload shape
+    // Normalize: always expose req.user.id and req.user._id (string) and role
+    const userId = (decoded.id || decoded._id)?.toString();
     req.user = {
       ...decoded,
-      id: decoded.id || decoded._id?.toString(),
+      id: userId,
+      _id: userId,
+      role: decoded.role || "farmer",
     };
 
     next();

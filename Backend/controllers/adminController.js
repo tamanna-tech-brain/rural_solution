@@ -153,3 +153,47 @@ export const deactivateUser = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// GET PUBLIC OVERVIEW STATS (for public dashboard counters)
+export const getPublicOverview = async (req, res) => {
+  try {
+    const [
+      totalUsers,
+      totalEquipment,
+      totalBookings,
+      totalMandiPools,
+      totalPaymentsCount,
+      openDisputes,
+    ] = await Promise.all([
+      User.countDocuments({ isActive: true }),
+      Equipment.countDocuments(),
+      Booking.countDocuments(),
+      MandiPool.countDocuments(),
+      Payment.countDocuments(),
+      Dispute.countDocuments({ status: "open" }),
+    ]);
+
+    const completedPayments = await Payment.aggregate([
+      { $match: { status: "completed" } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+    const totalPaymentsAmount = completedPayments[0]?.total || 0;
+
+    res.json({
+      success: true,
+      data: {
+        stats: {
+          totalUsers,
+          totalEquipment,
+          totalBookings,
+          totalMandiPools,
+          totalPayments: totalPaymentsAmount,
+          totalPaymentsCount,
+          openDisputes,
+        },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

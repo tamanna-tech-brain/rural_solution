@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { Navigation, Tractor, Truck, MapPin } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { Tractor, Truck, MapPin } from 'lucide-react';
 import { getEquipment, getMandi } from '../api/api';
 import useToast from '../hooks/useToast';
 
@@ -34,11 +34,47 @@ const MapPage = () => {
   const [showEquipment, setShowEquipment] = useState(true);
   const [showMandi, setShowMandi] = useState(true);
 
+  const CITY_COORDS = {
+    bhopal: [23.2599, 77.4126],
+    ratibad: [23.1815, 77.3486],
+    sehore: [23.2031, 77.0844],
+    indore: [22.7196, 75.8577],
+    khanna: [30.7024, 76.2195],
+    karnal: [29.6857, 76.9905],
+    rajkot: [22.3039, 70.8022],
+    alwar: [27.5530, 76.6346],
+    lasalgaon: [20.1477, 74.2259],
+    agra: [27.1767, 78.0081],
+    akola: [20.7002, 77.0082],
+    punjab: [30.7024, 76.2195],
+  };
+
+  const getEquipmentPos = (e) => {
+    if (e.driverLocation?.lat && e.driverLocation?.lng) {
+      return [e.driverLocation.lat, e.driverLocation.lng];
+    }
+    const locKey = (e.location || '').toLowerCase().trim();
+    for (const [key, coords] of Object.entries(CITY_COORDS)) {
+      if (locKey.includes(key)) {
+        // Add tiny jitter so multiple machines in same village don't overlap completely
+        const jitterLat = (Math.random() - 0.5) * 0.02;
+        const jitterLng = (Math.random() - 0.5) * 0.02;
+        return [coords[0] + jitterLat, coords[1] + jitterLng];
+      }
+    }
+    return null;
+  };
+
   useEffect(() => {
-    Promise.all([getEquipment(), getMandi()])
+    Promise.all([
+      getEquipment().catch(() => ({ data: [] })),
+      getMandi().catch(() => ({ data: [] })),
+    ])
       .then(([eRes, mRes]) => {
-        setEquipment(eRes.data || []);
-        setMandis(mRes.data || []);
+        const eData = eRes.data?.data || (Array.isArray(eRes.data) ? eRes.data : []);
+        const mData = mRes.data?.data || (Array.isArray(mRes.data) ? mRes.data : []);
+        setEquipment(eData);
+        setMandis(mData);
       })
       .catch(() => toast.error('Failed to load map data.'))
       .finally(() => setLoading(false));
@@ -49,10 +85,10 @@ const MapPage = () => {
     );
   }, []);
 
-  const DEFAULT_CENTER = [20.5937, 78.9629]; // India center
+  const DEFAULT_CENTER = [23.2599, 77.4126]; // Central India (Bhopal region)
   const mapCenter = userPos || DEFAULT_CENTER;
 
-  const withLoc = (items) => items.filter(i => i.driverLocation?.lat && i.driverLocation?.lng);
+  const withLoc = (items) => (Array.isArray(items) ? items : []).filter(i => i.driverLocation?.lat && i.driverLocation?.lng);
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -80,7 +116,7 @@ const MapPage = () => {
             </div>
           </div>
         ) : (
-          <MapContainer center={mapCenter} zoom={userPos ? 12 : 5} className="h-full w-full z-0">
+          <MapContainer center={mapCenter} zoom={userPos ? 12 : 6} className="h-full w-full z-0">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -92,6 +128,23 @@ const MapPage = () => {
                 <Popup><strong>📍 Your Location</strong></Popup>
               </Marker>
             )}
+
+            {/* Equipment with GPS or Village coordinates */}
+            {showEquipment && (Array.isArray(equipment) ? equipment : []).map(e => {
+              const pos = getEquipmentPos(e);
+              if (!pos) return null;
+              return (
+                <Marker key={e._id} position={pos} icon={equipIcon}>
+                  <Popup>
+                    <strong>🚜 {e.name || 'Equipment'}</strong><br/>
+                    Type: {e.type}<br/>
+                    Rate: ₹{e.rentalRatePerDay}/day<br/>
+                    Location: {e.location}<br/>
+                    Owner: {e.ownerId?.name || 'Local Farmer'}
+                  </Popup>
+                </Marker>
+              );
+            })}
 
             {/* Mandi trucks with GPS */}
             {showMandi && withLoc(mandis).map(m => (
