@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import Equipment from "../models/Equipment.js";
-import MandiPool from "../models/Mandipool.js";
+import MandiPool from "../models/MandiPool.js";
 import Booking from "../models/Booking.js";
 import Payment from "../models/Payment.js";
 import Dispute from "../models/Dispute.js";
