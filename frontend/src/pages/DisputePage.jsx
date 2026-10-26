@@ -7,10 +7,12 @@ import { CardSkeleton } from '../components/LoadingSkeleton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import useAuth from '../hooks/useAuth';
 import useToast from '../hooks/useToast';
+import { useLanguage } from '../context/LanguageContext';
 
 const DisputePage = () => {
   const { user } = useAuth();
   const toast = useToast();
+  const { t } = useLanguage();
 
   const [disputes, setDisputes] = useState([]);
   const [users, setUsers] = useState([]);
@@ -90,7 +92,7 @@ const DisputePage = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="page-header mb-0">
-          <h1>⚖️ Disputes</h1>
+          <h1>⚖️ {t('disputes', 'Disputes')}</h1>
           <p>Manage and resolve conflicts between farmers</p>
         </div>
         <button onClick={() => setShowForm(true)} className="btn btn-primary shrink-0"><Plus size={16}/> Raise Dispute</button>

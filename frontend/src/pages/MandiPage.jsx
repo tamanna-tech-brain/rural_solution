@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Truck, MapPin, Calendar, Users, Trash2, Edit2, X, Navigation } from 'lucide-react';
+import { Plus, Truck, MapPin, Calendar, Users, Trash2, Edit2, X, Navigation, Share2 } from 'lucide-react';
 import { createMandi, getMandi, updateMandi, deleteMandi, getMandiById, getUsers, updateMandiLocation } from '../api/api';
 import { CardSkeleton } from '../components/LoadingSkeleton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import useAuth from '../hooks/useAuth';
 import useToast from '../hooks/useToast';
+import { useLanguage } from '../context/LanguageContext';
 
 const STATUS_COLORS = {
   Pending:   'badge-yellow',
@@ -20,6 +21,7 @@ const MandiPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
+  const { t } = useLanguage();
 
   const [mandiList, setMandiList] = useState([]);
   const [users, setUsers] = useState([]);
@@ -147,15 +149,28 @@ const MandiPage = () => {
     finally { setDeleteTarget(null); }
   };
 
+  const shareOnWhatsApp = (pool) => {
+    const text = encodeURIComponent(
+      `🌾 *KrishiPool Mandi Freight Sharing Alert!*\n` +
+      `📍 Mandi Destination: ${pool.mandiLocation}\n` +
+      `📅 Departure Date: ${new Date(pool.mandiDate).toLocaleDateString()}\n` +
+      `🚛 Truck Capacity: ${pool.truckCapacity} Tons | Driver: ${pool.driverName || 'Verified Transporter'}\n` +
+      `👥 Current Farmers: ${pool.farmersJoined?.length || 0} joined\n\n` +
+      `💡 Share diesel & freight overhead to save up to 45% transport cost!\n` +
+      `👉 Join this pool on KrishiPool: ${window.location.origin}/booking/mandi/${pool._id}`
+    );
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="page-header mb-0">
-          <h1>🚛 Mandi Pool</h1>
+          <h1>🚛 {t('mandi_pool', 'Mandi Pool')}</h1>
           <p>Share transport to the mandi and reduce costs</p>
         </div>
         <button onClick={() => { resetForm(); setShowForm(true); }} className="btn btn-primary shrink-0">
-          <Plus size={16} /> Create Pool
+          <Plus size={16} /> {t('create_pool', 'Create Pool')}
         </button>
       </div>
 
@@ -191,10 +206,17 @@ const MandiPage = () => {
               <div className="mt-4 flex flex-wrap gap-2">
                 <button onClick={() => navigate(`/booking/mandi/${pool._id}`)} disabled={pool.isBooked}
                   className={`btn flex-1 py-1.5 text-xs ${pool.isBooked ? 'btn-ghost opacity-50 cursor-not-allowed' : 'btn-primary'}`}>
-                  {pool.isBooked ? 'Full' : 'Join Trip'}
+                  {pool.isBooked ? t('full', 'Full') : t('join_trip', 'Join Trip')}
                 </button>
                 <button onClick={() => navigate(`/trip/${pool._id}`)} className="btn btn-secondary flex-1 py-1.5 text-xs">
-                  <Navigation size={12}/> Track
+                  <Navigation size={12}/> {t('track', 'Track')}
+                </button>
+                <button
+                  onClick={() => shareOnWhatsApp(pool)}
+                  title="Share freight pool to farmer WhatsApp group"
+                  className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 px-2.5 text-xs flex items-center gap-1"
+                >
+                  <Share2 size={12}/> {t('share', 'Share')}
                 </button>
                 {user?._id === (pool.ownerId?._id || pool.ownerId) && (
                   <>

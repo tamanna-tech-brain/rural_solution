@@ -8,6 +8,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import useAuth from '../hooks/useAuth';
 import useToast from '../hooks/useToast';
 import useDebounce from '../hooks/useDebounce';
+import { useLanguage } from '../context/LanguageContext';
 
 const CONDITIONS = ['Good', 'Average', 'Old'];
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1590682680695-43b964a3ae17?w=400&auto=format&fit=crop';
@@ -16,6 +17,7 @@ const EquipmentPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
+  const { t } = useLanguage();
 
   const [equipments, setEquipments] = useState([]);
   const [users, setUsers] = useState([]);
@@ -151,7 +153,7 @@ const EquipmentPage = () => {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="page-header mb-0">
-          <h1>🚜 Equipment Marketplace</h1>
+          <h1>🚜 {t('equipment', 'Equipment Marketplace')}</h1>
           <p>Browse and manage farming equipment for rent</p>
         </div>
         <button onClick={() => { resetForm(); setShowForm(true); }} className="btn btn-primary shrink-0">
@@ -240,10 +242,10 @@ const EquipmentPage = () => {
                   )}
                   {!item.isBooked ? (
                     <button onClick={() => navigate(`/booking/equipment/${item._id}`)} className="btn btn-primary flex-1 py-1.5 text-xs">
-                      <CalendarRange size={12} /> Book
+                      <CalendarRange size={12} /> {t('book_now', 'Book')}
                     </button>
                   ) : (
-                    <button disabled className="btn flex-1 py-1.5 text-xs bg-slate-200 text-slate-400 cursor-not-allowed">Booked</button>
+                    <button disabled className="btn flex-1 py-1.5 text-xs bg-slate-200 text-slate-400 cursor-not-allowed">{t('completed', 'Booked')}</button>
                   )}
                 </div>
               </div>

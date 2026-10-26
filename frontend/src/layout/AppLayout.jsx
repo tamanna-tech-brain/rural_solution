@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import ErrorBoundary from '../components/ErrorBoundary';
+import KisanVoiceAssistant from '../components/KisanVoiceAssistant';
 import { translatePage } from '../api/googleTranslate';
 
 const AppLayout = ({ children }) => {
@@ -42,6 +43,9 @@ const AppLayout = ({ children }) => {
           </div>
         </main>
       </div>
+
+      {/* Persistent Kisan Voice Assistant & WhatsApp Floating Pill */}
+      <KisanVoiceAssistant />
     </div>
   );
 };

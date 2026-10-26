@@ -10,6 +10,7 @@ import { CardSkeleton } from '../components/LoadingSkeleton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import useAuth from '../hooks/useAuth';
 import useToast from '../hooks/useToast';
+import { useLanguage } from '../context/LanguageContext';
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1590682680695-43b964a3ae17?w=400&auto=format&fit=crop';
 
@@ -26,6 +27,7 @@ const BookingPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
+  const { t } = useLanguage();
 
   const isMandi = type === 'mandi';
   const isEquipment = type === 'equipment';
@@ -156,7 +158,7 @@ const BookingPage = () => {
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="page-header mb-0">
-            <h1>📅 Bookings</h1>
+            <h1>📅 {t('bookings', 'Bookings')}</h1>
             <p>All equipment booking records</p>
           </div>
           <select className="input-field sm:w-44" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>

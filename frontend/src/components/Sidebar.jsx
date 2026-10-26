@@ -7,22 +7,24 @@ import {
   Settings, LogOut, ChevronLeft, ChevronRight, Wheat,
 } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
+import { useLanguage } from '../context/LanguageContext';
 
 const menuItems = [
-  { label: 'Dashboard',     to: '/',             icon: LayoutDashboard, color: 'text-emerald-600' },
-  { label: 'Users',         to: '/user',          icon: Users,           color: 'text-violet-600'  },
-  { label: 'Equipment',     to: '/equipment',     icon: Tractor,         color: 'text-amber-600'   },
-  { label: 'Mandi Pool',    to: '/mandi',         icon: Store,           color: 'text-sky-600'     },
-  { label: 'Bookings',      to: '/booking',       icon: CalendarRange,   color: 'text-indigo-600'  },
-  { label: 'Payments',      to: '/payment',       icon: BadgeDollarSign, color: 'text-green-600'   },
-  { label: 'Disputes',      to: '/dispute',       icon: ShieldAlert,     color: 'text-red-600'     },
-  { label: 'Map',           to: '/map',           icon: MapPinned,       color: 'text-teal-600'    },
-  { label: 'Notifications', to: '/notifications', icon: Bell,            color: 'text-orange-600'  },
-  { label: 'Help Desk',     to: '/help',          icon: HelpCircle,      color: 'text-pink-600'    },
+  { key: 'dashboard',     label: 'Dashboard',     to: '/',             icon: LayoutDashboard, color: 'text-emerald-600' },
+  { key: 'users',         label: 'Users',         to: '/user',          icon: Users,           color: 'text-violet-600'  },
+  { key: 'equipment',     label: 'Equipment',     to: '/equipment',     icon: Tractor,         color: 'text-amber-600'   },
+  { key: 'mandi_pool',    label: 'Mandi Pool',    to: '/mandi',         icon: Store,           color: 'text-sky-600'     },
+  { key: 'bookings',      label: 'Bookings',      to: '/booking',       icon: CalendarRange,   color: 'text-indigo-600'  },
+  { key: 'payments',      label: 'Payments',      to: '/payment',       icon: BadgeDollarSign, color: 'text-green-600'   },
+  { key: 'disputes',      label: 'Disputes',      to: '/dispute',       icon: ShieldAlert,     color: 'text-red-600'     },
+  { key: 'map',           label: 'Map',           to: '/map',           icon: MapPinned,       color: 'text-teal-600'    },
+  { key: 'notifications', label: 'Notifications', to: '/notifications', icon: Bell,            color: 'text-orange-600'  },
+  { key: 'help_desk',     label: 'Help Desk',     to: '/help',          icon: HelpCircle,      color: 'text-pink-600'    },
 ];
 
 const Sidebar = ({ isOpen, onToggle }) => {
   const { user, logoutUser } = useAuth();
+  const { t } = useLanguage();
   const [collapsed, setCollapsed] = useState(false);
 
   const handleToggle = () => {
@@ -93,7 +95,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
 
         {/* Nav */}
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-          {menuItems.map(({ label, to, icon: Icon, color }) => (
+          {menuItems.map(({ key, label, to, icon: Icon, color }) => (
             <NavLink
               key={to}
               to={to}
@@ -120,7 +122,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                         exit={{ opacity: 0, width: 0 }}
                         className="overflow-hidden whitespace-nowrap"
                       >
-                        {label}
+                        {t(key, label)}
                       </motion.span>
                     )}
                   </AnimatePresence>

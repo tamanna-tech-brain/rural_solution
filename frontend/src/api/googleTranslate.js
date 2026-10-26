@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 const TRANSLATE_URL = `${API_BASE_URL}/translate`;
 const BLOCKED_TAGS = new Set(["SCRIPT", "STYLE", "TEXTAREA", "CODE", "PRE", "IFRAME", "INPUT", "OPTION", "SELECT", "NOSCRIPT"]);
 
@@ -21,27 +21,25 @@ const LANGUAGE_CODE_MAP = {
 };
 
 const originals = new WeakMap();
+const translationMemory = new Map();
 const NON_LATIN_SCRIPT = /[\p{sc=Devanagari}\p{sc=Bengali}\p{sc=Gujarati}\p{sc=Gurmukhi}\p{sc=Oriya}\p{sc=Tamil}\p{sc=Telugu}\p{sc=Kannada}\p{sc=Malayalam}\p{sc=Arabic}\p{sc=Thai}\p{sc=Tibetan}\p{sc=Myanmar}\p{sc=Hangul}]/u;
 const RTL_LANGUAGES = new Set(["ur", "sd", "ar", "fa", "he", "iw"]);
 
 function isTranslatableTextNode(node) {
   if (!node || node.nodeType !== Node.TEXT_NODE) return false;
   const text = node.nodeValue?.trim();
-  if (!text) return false;
+  if (!text || text.length === 1 && !/[a-zA-Z]/.test(text)) return false;
 
   const parent = node.parentElement;
   if (!parent || BLOCKED_TAGS.has(parent.tagName)) return false;
   if (parent.closest(".notranslate")) return false;
 
   // Preserve translated nodes so a user can switch languages again
-  // and restore back to English.
   if (originals.has(node)) {
     return true;
   }
 
-  // Skip nodes that already contain non-English scripts until they have
-  // been saved as originals. This avoids mangling names and mixed-language content.
-  const englishLike = /^[\u0020-\u007E\s.,!?\-–—'"()0-9]+$/;
+  const englishLike = /^[\u0020-\u007E\s.,!?\-–—'"()0-9%₹]+$/;
   if (!englishLike.test(text) && NON_LATIN_SCRIPT.test(text)) {
     return false;
   }
@@ -82,8 +80,26 @@ async function translateTextBlocks(texts, sourceLang, targetLang) {
     throw new Error(`Unsupported target language: ${targetLang}`);
   }
 
+  const uncachedIndices = [];
+  const uncachedTexts = [];
+  const results = new Array(texts.length);
+
+  texts.forEach((text, i) => {
+    const cacheKey = `${targetCode}:${text}`;
+    if (translationMemory.has(cacheKey)) {
+      results[i] = translationMemory.get(cacheKey);
+    } else {
+      uncachedIndices.push(i);
+      uncachedTexts.push(text);
+    }
+  });
+
+  if (uncachedTexts.length === 0) {
+    return results;
+  }
+
   const payload = {
-    texts,
+    texts: uncachedTexts,
     sourceLang,
     targetLang,
   };
@@ -92,7 +108,7 @@ async function translateTextBlocks(texts, sourceLang, targetLang) {
     const response = await fetch(TRANSLATE_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json; charset=utf-8",
       },
       body: JSON.stringify(payload),
     });
@@ -110,10 +126,19 @@ async function translateTextBlocks(texts, sourceLang, targetLang) {
       throw new Error(`Translation API returned invalid response: ${JSON.stringify(json)}`);
     }
 
-    return json.translations;
+    json.translations.forEach((translated, idx) => {
+      const originalIdx = uncachedIndices[idx];
+      results[originalIdx] = translated;
+      translationMemory.set(`${targetCode}:${uncachedTexts[idx]}`, translated);
+    });
+
+    return results;
   } catch (error) {
     console.warn('Translation API failed, keeping original text:', error.message);
-    return texts;
+    uncachedIndices.forEach((origIdx, idx) => {
+      results[origIdx] = uncachedTexts[idx];
+    });
+    return results;
   }
 }
 
@@ -122,7 +147,7 @@ const CHUNK_SIZE = 25;
 export async function translatePage(targetLang = "hi") {
   if (typeof window === "undefined") return;
 
-  const previousLang = document.documentElement.lang || localStorage.getItem("lang") || "en";
+  const previousLang = "en";
   const direction = RTL_LANGUAGES.has(targetLang) ? "rtl" : "ltr";
 
   if (targetLang === "en") {
@@ -151,11 +176,17 @@ export async function translatePage(targetLang = "hi") {
 
   try {
     for (const group of nodeGroups) {
-      const texts = group.map((node) => node.nodeValue.trim());
+      const texts = group.map((node) => {
+        const source = originals.has(node) ? originals.get(node) : (node.nodeValue || '');
+        return source.trim();
+      });
       const translated = await translateTextBlocks(texts, previousLang, targetLang);
       translated.forEach((value, index) => {
         if (typeof value === "string") {
-          group[index].nodeValue = value;
+          const raw = originals.get(group[index]) || group[index].nodeValue || '';
+          const leadingSpace = raw.match(/^\s*/)?.[0] || '';
+          const trailingSpace = raw.match(/\s*$/)?.[0] || '';
+          group[index].nodeValue = `${leadingSpace}${value}${trailingSpace}`;
         }
       });
     }

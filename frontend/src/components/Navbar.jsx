@@ -1,35 +1,24 @@
-import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Bell, Sun, Moon, Menu, Wheat, Globe, Radio } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import useDarkMode from '../hooks/useDarkMode';
+import { useLanguage } from '../context/LanguageContext';
 
-const LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'hi', label: 'हिंदी' },
-  { code: 'pa', label: 'ਪੰਜਾਬੀ' },
-  { code: 'mr', label: 'मराठी' },
-  { code: 'gu', label: 'ગુજરાતી' },
-  { code: 'bn', label: 'বাংলা' },
-  { code: 'te', label: 'తెలుగు' },
-  { code: 'ta', label: 'தமிழ்' },
-];
-
-// Map routes to breadcrumb labels
-const ROUTE_LABELS = {
-  '/':             'Dashboard',
-  '/user':         'Users',
-  '/equipment':    'Equipment',
-  '/mandi':        'Mandi Pool',
-  '/booking':      'Bookings',
-  '/payment':      'Payments',
-  '/dispute':      'Disputes',
-  '/map':          'Live Map',
-  '/notifications':'Notifications',
-  '/help':         'Help Desk',
-  '/admin':        'Admin Panel',
-  '/profile':      'My Profile',
+// Map routes to translation keys
+const ROUTE_KEYS = {
+  '/':             { key: 'dashboard',     fb: 'Dashboard' },
+  '/user':         { key: 'users',         fb: 'Users' },
+  '/equipment':    { key: 'equipment',     fb: 'Equipment' },
+  '/mandi':        { key: 'mandi_pool',    fb: 'Mandi Pool' },
+  '/booking':      { key: 'bookings',      fb: 'Bookings' },
+  '/payment':      { key: 'payments',      fb: 'Payments & Escrow' },
+  '/dispute':      { key: 'disputes',      fb: 'Dispute Desk' },
+  '/map':          { key: 'map',           fb: 'Live Map & Radar' },
+  '/notifications':{ key: 'notifications', fb: 'Notifications' },
+  '/help':         { key: 'help_desk',     fb: 'Kisan Help Desk' },
+  '/admin':        { key: 'admin',         fb: 'Admin Panel' },
+  '/profile':      { key: 'profile',       fb: 'My Profile' },
 };
 
 const Navbar = ({ onMenuClick }) => {
@@ -37,15 +26,10 @@ const Navbar = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDark, toggleDark } = useDarkMode();
-  const [currentLang, setCurrentLang] = useState(localStorage.getItem('lang') || 'en');
+  const { currentLang, changeLanguage, t, languages } = useLanguage();
 
-  const pageTitle = ROUTE_LABELS[location.pathname] || 'KrishiPool';
-
-  const handleLangChange = (code) => {
-    setCurrentLang(code);
-    localStorage.setItem('lang', code);
-    window.dispatchEvent(new CustomEvent('krishiLangChanged', { detail: { lang: code } }));
-  };
+  const routeMeta = ROUTE_KEYS[location.pathname];
+  const pageTitle = routeMeta ? t(routeMeta.key, routeMeta.fb) : 'KrishiPool';
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-4 py-3 shadow-xs">
@@ -74,19 +58,19 @@ const Navbar = ({ onMenuClick }) => {
         {/* Right — actions */}
         <div className="flex items-center gap-2">
 
-          {/* Quick Language Selector */}
+          {/* Quick Language Selector (14 Regional Languages) */}
           <div className="relative flex items-center">
-            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200">
+            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 shadow-xs">
               <Globe size={14} className="text-emerald-600 dark:text-emerald-400" />
               <select
                 value={currentLang}
-                onChange={(e) => handleLangChange(e.target.value)}
-                className="bg-transparent border-none text-xs font-semibold focus:ring-0 cursor-pointer pr-1"
+                onChange={(e) => changeLanguage(e.target.value)}
+                className="bg-transparent border-none text-xs font-bold focus:ring-0 cursor-pointer pr-1"
                 aria-label="Language selection"
               >
-                {LANGUAGES.map((l) => (
-                  <option key={l.code} value={l.code} className="dark:bg-slate-800 text-slate-900 dark:text-slate-100">
-                    {l.label}
+                {languages.map((l) => (
+                  <option key={l.code} value={l.code} className="dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold">
+                    {l.flag} {l.native || l.label}
                   </option>
                 ))}
               </select>
